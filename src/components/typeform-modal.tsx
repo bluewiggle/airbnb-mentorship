@@ -1,15 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { createWidget } from "@typeform/embed";
+import "@typeform/embed/build/css/widget.css";
+import { track } from "@/lib/track";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  typeformUrl: string;
+  typeformUrl: string; // full URL like https://xxxx.typeform.com/to/ABCDE
   title?: string;
 };
 
 export default function TypeformModal({ open, onClose, typeformUrl, title = "Apply" }: Props) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // ESC close
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -17,14 +23,28 @@ export default function TypeformModal({ open, onClose, typeformUrl, title = "App
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
+  // lock scroll + mount typeform widget
   useEffect(() => {
     if (!open) return;
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    // mount widget + callbacks
+    if (containerRef.current) {
+      containerRef.current.innerHTML = "";
+
+      createWidget(typeformUrl, {
+        container: containerRef.current,
+        onStarted: () => track("form_started"),
+        onSubmit: () => track("form_submitted"),
+      });
+    }
+
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [open]);
+  }, [open, typeformUrl]);
 
   if (!open) return null;
 
@@ -48,13 +68,8 @@ export default function TypeformModal({ open, onClose, typeformUrl, title = "App
           </div>
 
           <div className="h-[70vh] bg-black">
-            <iframe
-              title="Typeform application"
-              src={typeformUrl}
-              className="h-full w-full"
-              frameBorder={0}
-              allow="camera; microphone; autoplay; encrypted-media;"
-            />
+            {/* Typeform mounts here */}
+            <div ref={containerRef} className="h-full w-full" />
           </div>
         </div>
       </div>

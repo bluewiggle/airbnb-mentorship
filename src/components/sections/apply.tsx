@@ -59,8 +59,6 @@ export function Apply() {
                 Review what’s included
               </ButtonLink>
             </div>
-
-            <div className="mt-4 text-[12px] text-white/55">Tip: swap the Typeform URL anytime.</div>
           </div>
         </div>
       </div>
