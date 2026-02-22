@@ -88,7 +88,7 @@ export function Operators() {
           ]}
 
           pills={["Systems first", "Numbers-driven", "Repeatable scale"]}
-          img="https://placehold.co/920x1100/png?text=Noah+Photo"
+          img="/Noah_Mentor.png"
         />
         <Founder
           reverse
