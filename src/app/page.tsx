@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import ApplicationModal from "@/components/application-modal";
 import { Hero } from "@/components/sections/hero";
 import { Authority } from "@/components/sections/authority";
 import { Problem } from "@/components/sections/problem";
@@ -11,20 +15,28 @@ import { Apply } from "@/components/sections/apply";
 import { SiteFooter } from "@/components/site-footer";
 
 export default function Page() {
+  const [applyOpen, setApplyOpen] = useState(false);
+
   return (
     <>
-      <SiteHeader />
+      <SiteHeader onApplyClick={() => setApplyOpen(true)} />
+
+      <ApplicationModal open={applyOpen} onClose={() => setApplyOpen(false)} title="Apply for mentorship" />
+
       <main>
-        <Hero />
+        <Hero onApplyClick={() => setApplyOpen(true)} />
         <Authority />
         <Problem />
         <Operators />
         <HowItWorks />
-        <MentorshipSnapshot />
+        <MentorshipSnapshot onApplyClick={() => setApplyOpen(true)} />
         <FitCheck />
         <FAQ />
-        <Apply />
+
+        {/* Make the Apply section button also open the same modal */}
+        <Apply onApplyClick={() => setApplyOpen(true)} />
       </main>
+
       <SiteFooter />
     </>
   );

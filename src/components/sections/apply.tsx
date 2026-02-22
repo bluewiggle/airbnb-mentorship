@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { ButtonLink, Section } from "@/components/ui";
-import TypeformModal from "@/components/typeform-modal";
 
-export function Apply() {
-  const [open, setOpen] = useState(false);
+type Props = {
+  onApplyClick: () => void;
+};
 
+export function Apply({ onApplyClick }: Props) {
   return (
     <Section id="apply">
       <div className="surface rounded-[28px] px-7 py-10 md:px-10 md:py-12">
@@ -41,15 +41,19 @@ export function Apply() {
           </div>
 
           <div className="surface rounded-[22px] p-6">
-            <div className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-white/70">Next step</div>
-            <div className="mt-2 text-[18px] font-extrabold text-white/95">Submit your application</div>
+            <div className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-white/70">
+              Next step
+            </div>
+            <div className="mt-2 text-[18px] font-extrabold text-white/95">
+              Submit your application
+            </div>
             <p className="mt-2 text-[14.5px] leading-[1.7] text-white/72">
               Click below — the application opens without leaving the page.
             </p>
 
             <div className="mt-6 flex flex-col gap-3">
               <button
-                onClick={() => setOpen(true)}
+                onClick={onApplyClick}
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-accent px-4 py-3 text-[14px] font-extrabold text-black transition will-change-transform hover:-translate-y-0.5 hover:shadow-glow"
               >
                 Open application
@@ -62,13 +66,6 @@ export function Apply() {
           </div>
         </div>
       </div>
-
-      <TypeformModal
-        open={open}
-        onClose={() => setOpen(false)}
-        typeformUrl="https://form.typeform.com/to/MtGm1xg7"
-        title="Apply for mentorship"
-      />
     </Section>
   );
 }

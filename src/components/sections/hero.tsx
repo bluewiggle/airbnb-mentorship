@@ -1,6 +1,10 @@
 "use client";
 
-import { ButtonLink, H1, P, Section } from "@/components/ui";
+import { H1, P, Section } from "@/components/ui";
+
+type Props = {
+  onApplyClick: () => void;
+};
 
 // Melbourne time
 const melbourneNow = new Date(
@@ -21,7 +25,7 @@ const firstThird = Math.ceil(daysInMonth / 3);
 
 const isFirstThird = day <= firstThird;
 
-export function Hero() {
+export function Hero({ onApplyClick }: Props) {
   return (
     <Section id="top" className="pt-[110px] md:pt-[140px]">
       <div className="text-center">
@@ -36,12 +40,19 @@ export function Hero() {
         </P>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <ButtonLink href="#apply" variant="primary">
+          <button
+            onClick={onApplyClick}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-accent px-5 py-3 text-[14px] font-extrabold text-black transition will-change-transform hover:-translate-y-0.5 hover:shadow-glow"
+          >
             Apply to see if you qualify
-          </ButtonLink>
-          <ButtonLink href="#how" variant="ghost">
+          </button>
+
+          <a
+            href="#how"
+            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[14px] font-extrabold text-white/80 hover:bg-white/10 hover:text-white"
+          >
             See the process
-          </ButtonLink>
+          </a>
         </div>
 
         <div className="mt-6 text-[13px] font-semibold text-white/60">
