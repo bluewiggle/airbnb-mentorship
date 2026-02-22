@@ -22,7 +22,6 @@ const STEPS = [
     title: "Furnish To Convert",
     body: "You need to know exactly what to buy and what not to waste money on. We show you precisely what guests expect for strong reviews, higher nightly rates, and repeat bookings. Plus, through our niche sourcing strategy, we help you save $4k+ compared to most new Airbnb hosts.",
     chips: ["Guest expectations", "Niche sourcing", "Conversion setup"],
-    feature: true,
   },
   {
     n: "04",
@@ -94,24 +93,19 @@ export function HowItWorks() {
 
         {/* Panel */}
         <div className="lg:sticky lg:top-[92px]">
-          <div className={cn(
-            "rounded-[30px] border p-0 shadow-[0_36px_140px_rgba(0,0,0,0.58)] overflow-hidden",
-            STEPS[active]?.feature ? "border-accent/30 bg-accent/5" : "border-white/12 bg-white/5"
-          )}>
-            <div className="p-8 md:p-10">
-              <div className="flex items-baseline gap-4">
-                <div className="text-[12px] font-extrabold tracking-[0.22em] text-white/70">{STEPS[active].n}</div>
-                <div className="text-[20px] font-extrabold text-white/95">{STEPS[active].title}</div>
-              </div>
-              <p className="mt-4 max-w-[820px] text-[16px] leading-[1.75] text-white/74">{STEPS[active].body}</p>
+          <div className="p-8 md:p-10">
+            <div className="flex items-baseline gap-4">
+              <div className="text-[12px] font-extrabold tracking-[0.22em] text-white/70">{STEPS[active].n}</div>
+              <div className="text-[20px] font-extrabold text-white/95">{STEPS[active].title}</div>
+            </div>
+            <p className="mt-4 max-w-[820px] text-[16px] leading-[1.75] text-white/74">{STEPS[active].body}</p>
 
-              <div className="mt-6 flex flex-wrap gap-2">
-                {STEPS[active].chips.map((c) => (
-                  <span key={c} className="rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[12px] font-extrabold text-white/78">
-                    {c}
-                  </span>
-                ))}
-              </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {STEPS[active].chips.map((c) => (
+                <span key={c} className="rounded-full border border-white/12 bg-white/6 px-4 py-2 text-[12px] font-extrabold text-white/78">
+                  {c}
+                </span>
+              ))}
             </div>
           </div>
         </div>
