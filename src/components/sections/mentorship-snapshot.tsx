@@ -71,8 +71,8 @@ export function MentorshipSnapshot({ onApplyClick }: Props) {
                               overflow-hidden rounded-[14px] border border-white/14 bg-black/20
                               shadow-[0_22px_70px_rgba(0,0,0,0.42)]">
                 <Image
-                  src="https://placehold.co/220x140/png?text=Screen+share"
-                  alt=""
+                  src="/Mentorship_call_1.png"
+                  alt="Mentor call screen share preview"
                   width={220}
                   height={140}
                   className="h-auto w-full opacity-95"
@@ -84,8 +84,8 @@ export function MentorshipSnapshot({ onApplyClick }: Props) {
                               overflow-hidden rounded-[14px] border border-white/14 bg-black/20
                               shadow-[0_22px_70px_rgba(0,0,0,0.42)]">
                 <Image
-                  src="https://placehold.co/220x140/png?text=Checklist"
-                  alt=""
+                  src="/Mentorship_call_2.png"
+                  alt="Another mentor call screen share previe"
                   width={220}
                   height={140}
                   className="h-auto w-full opacity-95"
