@@ -2,10 +2,24 @@
 
 import { ButtonLink, H1, P, Section } from "@/components/ui";
 
-const melbourneMonth = new Intl.DateTimeFormat("en-AU", {
+const melbourneNow = new Date(
+  new Date().toLocaleString("en-US", { timeZone: "Australia/Melbourne" })
+);
+
+const day = melbourneNow.getDate();
+
+const monthName = melbourneNow.toLocaleString("default", {
   month: "long",
   timeZone: "Australia/Melbourne",
-}).format(new Date());
+});
+
+const year = melbourneNow.getFullYear();
+const month = melbourneNow.getMonth();
+
+const daysInMonth = new Date(year, month + 1, 0).getDate();
+const firstThird = Math.ceil(daysInMonth / 3);
+
+const isFirstThird = day <= firstThird;
 
 export function Hero() {
   return (
@@ -30,11 +44,11 @@ export function Hero() {
           </ButtonLink>
         </div>
 
-        <div className="mt-6 text-[13px] font-semibold text-white/60">
-          Applications for{" "}
-          <span className="text-white/85">{melbourneMonth}</span>{" "}
-          enrollment now open.
-        </div>
+        <div className="inline-flex rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[12px] font-extrabold uppercase tracking-[0.22em] text-white/75">
+        {isFirstThird
+          ? `Applications for ${monthName} enrollment now open.`
+          : `Applications for ${monthName} are almost closed`}
+      </div>
       </div>
     </Section>
   );
