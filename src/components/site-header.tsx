@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/components/utils";
+import Image from "next/image";
 
 const links = [
   { href: "#how", label: "Process" },
@@ -31,11 +32,21 @@ export function SiteHeader({ onApplyClick }: Props) {
       )}
     >
       <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-4">
-        <a href="#top" className="font-extrabold tracking-[-0.02em] text-white/95">
-          BNB Lab
-          <span className="ml-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/70">
-            Mentorship
-          </span>
+        <a href="#top" className="flex items-center gap-3">
+          <Image
+            src="/BNB_Lab_3.png"
+            alt="BNB Lab"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-lg"
+            priority
+          />
+          <div className="font-extrabold tracking-[-0.02em] text-white/95">
+            BNB Lab
+            <span className="ml-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/70">
+              Mentorship
+            </span>
+          </div>
         </a>
 
         <nav className="hidden items-center gap-6 md:flex">
