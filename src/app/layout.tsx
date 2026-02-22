@@ -6,8 +6,8 @@ import Script from "next/script";
 
 
 export const metadata: Metadata = {
-  title: "Airbnb 1:1 Mentorship",
-  description: "Direct operator support to get your first (and next) property live — fast.",
+  title: "BNB Lab | Airbnb Mentorship",
+  description: "BNB Lab — Direct operator support to launch and scale your Airbnb business.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

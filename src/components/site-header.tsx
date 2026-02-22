@@ -24,7 +24,7 @@ export function SiteHeader() {
     <header className={cn("sticky top-0 z-50 px-6 py-4", scrolled ? "backdrop-blur-xl bg-black/35 border-b border-white/10" : "bg-transparent")}>
       <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-4">
         <a href="#top" className="font-extrabold tracking-[-0.02em] text-white/95">
-          Elevated Apartments
+          BNB Lab
           <span className="ml-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/70">Mentorship</span>
         </a>
 
