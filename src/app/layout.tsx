@@ -8,6 +8,14 @@ import Script from "next/script";
 export const metadata: Metadata = {
   title: "BNB Lab | Airbnb Mentorship",
   description: "BNB Lab — Direct operator support to launch and scale your Airbnb business.",
+
+  metadataBase: new URL("https://www.bnblab.com.au"),
+
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
