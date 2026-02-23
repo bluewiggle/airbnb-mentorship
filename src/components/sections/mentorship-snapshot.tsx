@@ -58,7 +58,7 @@ export function MentorshipSnapshot({ onApplyClick }: Props) {
             <div className="relative w-full max-w-[560px]">
               <div className="overflow-hidden rounded-[18px] border border-white/14 bg-black/20 shadow-[0_28px_90px_rgba(0,0,0,0.45)]">
                 <Image
-                  src="/Mentorship_course.jpg"
+                  src="/Mentorship_call.jpg"
                   alt="Mentorship Snapshot"
                   width={900}
                   height={520}
