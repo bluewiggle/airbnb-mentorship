@@ -36,8 +36,8 @@ export function SiteHeader({ onApplyClick }: Props) {
           <Image
             src="/Logo_Trimmed_Trans.png"
             alt="BNB Lab"
-            width={100}
-            height={20.28}
+            width={200}
+            height={50.5}
             className="h-10 w-auto"
             priority
           />
