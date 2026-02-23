@@ -34,7 +34,7 @@ export function SiteHeader({ onApplyClick }: Props) {
       <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-4">
         <a href="#top" className="flex items-center">
           <Image
-            src="/Logo_Trimmed.png"
+            src="/Logo_Trimmed_Trans.png"
             alt="BNB Lab"
             width={100}
             height={20.28}

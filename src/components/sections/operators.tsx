@@ -100,7 +100,7 @@ export function Operators() {
             "Responsible for negotiating with agents, getting leases approved, optimising nightly rates, and ensuring each property performs consistently from launch onward.",
           ]}
           pills={["Agent strategy", "Building filters", "Rollout standards"]}
-          img="https://placehold.co/920x1100/png?text=Liam+Photo"
+          img="/Liam_Mentor.png"
         />
       </div>
     </Section>
