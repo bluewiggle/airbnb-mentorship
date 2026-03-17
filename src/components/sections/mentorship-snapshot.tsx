@@ -75,7 +75,7 @@ export function MentorshipSnapshot({ onApplyClick }: Props) {
                   alt="Mentor call screen share preview"
                   width={220}
                   height={140}
-                  className="h-auto w-full opacity-95"
+                  className="h-auto w-full opacity-100"
                 />
               </div>
 
@@ -88,7 +88,7 @@ export function MentorshipSnapshot({ onApplyClick }: Props) {
                   alt="Another mentor call screen share previe"
                   width={220}
                   height={140}
-                  className="h-auto w-full opacity-95"
+                  className="h-auto w-full opacity-100"
                 />
               </div>
             </div>
