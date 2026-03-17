@@ -84,7 +84,7 @@ export function MentorshipSnapshot({ onApplyClick }: Props) {
                               overflow-hidden rounded-[14px] border border-white/14 bg-black/20
                               shadow-[0_22px_70px_rgba(0,0,0,0.42)]">
                 <Image
-                  src="/Mentorship_call_2.png"
+                  src="/Mentorship_call_2.jpg"
                   alt="Another mentor call screen share previe"
                   width={220}
                   height={140}
