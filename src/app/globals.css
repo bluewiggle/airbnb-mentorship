@@ -52,3 +52,11 @@ body{
 :target{
   scroll-margin-top: 92px;
 }
+
+html, body {
+  background: #000000;
+}
+
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
