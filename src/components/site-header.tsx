@@ -52,13 +52,12 @@ export function SiteHeader({ onApplyClick }: Props) {
         </nav>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onApplyClick}
+          <a
+            href="#apply"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-accent px-4 py-2.5 text-[14px] font-extrabold text-black transition will-change-transform hover:-translate-y-0.5 hover:shadow-glow"
           >
             Apply
-          </button>
+          </a>
         </div>
       </div>
     </header>

@@ -1,71 +1,188 @@
 "use client";
 
-import { ButtonLink, Section } from "@/components/ui";
+import { Section } from "@/components/ui";
+import { useState } from "react";
 
-type Props = {
-  onApplyClick: () => void;
-};
+import { useEffect } from "react";
 
-export function Apply({ onApplyClick }: Props) {
+function CalendlyEmbed() {
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://assets.calendly.com/assets/external/widget.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  return (
+    <>
+      <div className="text-center">
+        <h2 className="text-[clamp(34px,4.5vw,48px)] font-extrabold text-white">
+          Book your call
+        </h2>
+
+        <p className="mt-3 text-white/70">
+          Select a time below to speak with us.
+        </p>
+      </div>
+
+      <div className="mt-10 max-w-[900px] mx-auto">
+        <div
+          className="calendly-inline-widget w-full"
+          data-url="https://calendly.com/elevatedapartments/30min"
+          style={{ minWidth: "320px", height: "1000px" }} // 🔥 FIXED HEIGHT
+        />
+      </div>
+    </>
+  );
+}
+
+export function Apply() {
+  const [step, setStep] = useState<"form" | "rejected" | "booking">("form");
+  const [capital, setCapital] = useState<string | null>(null);
+  const [timeline, setTimeline] = useState<string | null>(null);
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!capital || !timeline) {
+      alert("Please complete all fields");
+      return;
+    }
+
+    if (capital === "<10k") {
+      setStep("rejected");
+      return;
+    }
+
+    setStep("booking");
+  }
+
+  // ❌ REJECTED
+  if (step === "rejected") {
+    return (
+      <Section id="apply">
+        <div className="text-center max-w-[600px] mx-auto">
+          <h2 className="text-[32px] font-extrabold text-white">
+            You don’t qualify (yet)
+          </h2>
+
+          <p className="mt-4 text-white/70 leading-[1.7]">
+            Right now, we only work with people who have at least $10k ready to deploy.
+            This ensures you can actually execute and get results.
+          </p>
+        </div>
+      </Section>
+    );
+  }
+
+// ✅ BOOKING (Calendly inline)
+if (step === "booking") {
   return (
     <Section id="apply">
-      <div className="surface rounded-[28px] px-7 py-10 md:px-10 md:py-12">
-        <div className="grid gap-8 md:grid-cols-[1fr_360px] md:items-center">
-          <div>
-            <div className="inline-flex rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[12px] font-extrabold uppercase tracking-[0.22em] text-white/75">
-              Applications
-            </div>
+      <CalendlyEmbed />
+    </Section>
+  );
+}
 
-            <h2 className="mt-5 text-[clamp(30px,3.8vw,48px)] font-extrabold tracking-[-0.03em] leading-[1.08] text-white/95">
-              Apply to see if you qualify.
-            </h2>
+  // ✅ FORM
+  return (
+    <Section id="apply">
+      <div className="text-center">
+        <div className="inline-flex items-center gap-3 text-[12px] font-extrabold uppercase tracking-[0.26em] text-white/70">
+          <span className="h-px w-14 bg-white/18" />
+          Apply
+          <span className="h-px w-14 bg-white/18" />
+        </div>
 
-            <p className="mt-3 max-w-[720px] text-[15.5px] leading-[1.8] text-white/72">
-              We’ll review your situation, capital, and urgency. If it’s a fit, we’ll map a clean path to your first
-              property and a repeatable operating rhythm.
-            </p>
+        <h2 className="mt-6 text-[clamp(34px,4.5vw,48px)] font-extrabold text-white">
+          See if you qualify
+        </h2>
 
-            <ul className="mt-6 space-y-2 text-[14.5px] text-white/75">
-              {[
-                "Selection rules + approval scripts",
-                "Weekly execution calls (or biweekly depending on stage)",
-                "Direct support between calls",
-                "Systems, dashboards, and standards",
-              ].map((x) => (
-                <li key={x} className="flex items-start gap-2">
-                  <span className="mt-2 h-2 w-2 rounded-full bg-accent" />
-                  <span>{x}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <p className="mx-auto mt-4 max-w-[640px] text-[15px] text-white/70">
+          Takes 60 seconds. If you’re a fit, you’ll book a call instantly.
+        </p>
+      </div>
 
-          <div className="surface rounded-[22px] p-6">
-            <div className="text-[13px] font-extrabold uppercase tracking-[0.16em] text-white/70">
-              Next step
-            </div>
-            <div className="mt-2 text-[18px] font-extrabold text-white/95">
-              Submit your application
-            </div>
-            <p className="mt-2 text-[14.5px] leading-[1.7] text-white/72">
-              Click below — the application opens without leaving the page.
-            </p>
+      <form
+        onSubmit={handleSubmit}
+        className="mx-auto mt-10 max-w-[600px] flex flex-col gap-4"
+      >
+        <input
+          placeholder="Full name"
+          required
+          className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
+        />
 
-            <div className="mt-6 flex flex-col gap-3">
+        <input
+          type="email"
+          placeholder="Email address"
+          required
+          className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
+        />
+
+        <input
+          placeholder="Phone number"
+          required
+          className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
+        />
+
+        {/* CAPITAL */}
+        <div className="mt-2">
+          <div className="text-white/60 text-sm mb-2">Capital ready</div>
+          <div className="grid grid-cols-2 gap-2">
+            {["<10k", "10-25k", "25-50k", "50k+"].map((option) => (
               <button
-                onClick={onApplyClick}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-accent px-4 py-3 text-[14px] font-extrabold text-black transition will-change-transform hover:-translate-y-0.5 hover:shadow-glow"
+                key={option}
+                type="button"
+                onClick={() => setCapital(option)}
+                className={`rounded-[10px] px-4 py-3 border ${
+                  capital === option
+                    ? "bg-accent text-black"
+                    : "bg-white/5 text-white"
+                }`}
               >
-                Open application
+                {option}
               </button>
-
-              <ButtonLink href="#mentorship" variant="ghost">
-                Review what’s included
-              </ButtonLink>
-            </div>
+            ))}
           </div>
         </div>
-      </div>
+
+        {/* TIMELINE */}
+        <div className="mt-2">
+          <div className="text-white/60 text-sm mb-2">
+            When are you ready to start?
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              "Immediately",
+              "Within 2 weeks",
+              "Within a month",
+              "Just exploring",
+            ].map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setTimeline(option)}
+                className={`rounded-[10px] px-4 py-3 border ${
+                  timeline === option
+                    ? "bg-accent text-black"
+                    : "bg-white/5 text-white"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button className="mt-6 rounded-full bg-accent px-6 py-3 font-extrabold text-black">
+          Continue
+        </button>
+
+        <p className="text-center text-[13px] text-white/50 mt-2">
+          Limited spots each month
+        </p>
+      </form>
     </Section>
   );
 }
