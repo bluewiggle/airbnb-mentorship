@@ -3,7 +3,7 @@ import { Section } from "@/components/ui";
 export function SiteFooter() {
   return (
     <Section className="pt-0">
-      <div className="surface rounded-[26px] px-6 py-10 pb-6">
+      <div className="surface rounded-[26px] px-6 py-10">
         <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
             <div className="text-white/90 font-extrabold">BNB LAB™</div>

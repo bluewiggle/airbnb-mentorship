@@ -27,8 +27,8 @@ export function SiteHeader({ onApplyClick }: Props) {
   return (
     <header
       className={cn(
-        "md:sticky md:top-0 z-50 px-6 py-4",
-        scrolled ? "md:backdrop-blur-xl md:bg-black/35 md:border-b md:border-white/10" : "bg-transparent"
+        "sticky top-0 z-50 px-6 py-4",
+        scrolled ? "backdrop-blur-xl bg-black/35 border-b border-white/10" : "bg-transparent"
       )}
     >
       <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-4">
