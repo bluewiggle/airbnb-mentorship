@@ -8,17 +8,25 @@ export const metadata: Metadata = {
   description:
     "BNB Lab — Direct operator support to launch and scale your Airbnb business.",
   metadataBase: new URL("https://www.bnblab.com.au"),
-  themeColor: "#0b0b0f",
 
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-32x32.png",
     apple: "/apple-touch-icon.png",
   },
+
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0b0f",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "dark",
+  themeColor: "#0b0d10",
 };
 
 export default function RootLayout({
@@ -27,12 +35,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="bg-[#0b0b0f]">
-      <body className="bg-[#0b0b0f]">
+    <html lang="en">
+      <body>
         <SmoothScroll />
 
-        {/* Background layer */}
-        <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(255,90,95,0.18),transparent_44%),radial-gradient(circle_at_82%_26%,rgba(255,255,255,0.08),transparent_42%),linear-gradient(180deg,#0b0d10_0%,#0b0d10_35%,#07080a_100%)]" />
+        {/* One continuous background across the whole page, including safe areas */}
+        <div className="site-chrome-bg" />
 
         {process.env.NEXT_PUBLIC_GA_ID && (
           <>

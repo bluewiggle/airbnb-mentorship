@@ -3,29 +3,48 @@
 @tailwind utilities;
 
 :root{
-  /* Theme tokens (dark operator + green accent) */
-  --bg: 9 12 14;          /* near #090C0E */
-  --panel: 255 255 255;   /* used w/ alpha */
+  --bg: 9 12 14;
+  --panel: 255 255 255;
   --ink: 255 255 255;
   --mut: 255 255 255;
   --line: 255 255 255;
 
-  /* Accent (your subtle pop green) */
-  /* Airbnb Coral */
-  --accent: 255 90 95;     /* #FF5A5F */
-  --accent2: 227 72 78;    /* slightly deeper coral for contrast */
-
+  --accent: 255 90 95;
+  --accent2: 227 72 78;
 }
 
-html, body{
-  height: 100%;
+html,
+body{
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+html{
+  color-scheme: dark;
 }
 
 body{
   color: rgb(var(--ink) / 0.92);
   background: transparent;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
+/* Full-page background layer that sits behind everything */
+.site-chrome-bg{
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255,90,95,0.18), transparent 44%),
+    radial-gradient(circle at 82% 26%, rgba(255,255,255,0.08), transparent 42%),
+    linear-gradient(180deg, #0b0d10 0%, #0b0d10 35%, #07080a 100%);
+}
 
 /* nicer font rendering */
 *{
@@ -51,12 +70,4 @@ body{
 /* Smooth anchor offset for sticky nav */
 :target{
   scroll-margin-top: 92px;
-}
-
-html, body {
-  background: #0b0b0f;
-}
-
-body {
-  padding-bottom: env(safe-area-inset-bottom);
 }
