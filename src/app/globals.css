@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  overflow-x: hidden;
+}
+
 :root{
   /* Theme tokens (dark operator + green accent) */
   --bg: 9 12 14;          /* near #090C0E */
