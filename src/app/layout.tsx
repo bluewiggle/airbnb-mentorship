@@ -7,7 +7,6 @@ import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "BNB Lab | Airbnb Mentorship",
-  themeColor: "#000000",
   description: "BNB Lab — Direct operator support to launch and scale your Airbnb business.",
 
   metadataBase: new URL("https://www.bnblab.com.au"),
