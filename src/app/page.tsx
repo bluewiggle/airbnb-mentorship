@@ -11,6 +11,7 @@ import { OurGuarantee } from "@/components/sections/our-guarantee";
 import { FAQ } from "@/components/sections/faq";
 import { Apply } from "@/components/sections/apply";
 import { SiteFooter } from "@/components/site-footer";
+import { Success } from "@/components/sections/success";
 
 export default function Page() {
   const [applyOpen, setApplyOpen] = useState(false);
@@ -23,6 +24,7 @@ export default function Page() {
 
       <main>
         <Hero onApplyClick={() => setApplyOpen(true)} />
+        <Success />
         <MentorshipSnapshot />
         <OurGuarantee />
         <Apply />
