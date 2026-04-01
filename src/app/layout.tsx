@@ -7,6 +7,7 @@ import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "BNB Lab | Airbnb Mentorship",
+  themeColor: "#0b0b0f",
   description: "BNB Lab — Direct operator support to launch and scale your Airbnb business.",
 
   metadataBase: new URL("https://www.bnblab.com.au"),
@@ -48,7 +49,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 }
 
-
 export const viewport = {
-  themeColor: "#000000",
+  themeColor: "#0b0b0f",
 };
