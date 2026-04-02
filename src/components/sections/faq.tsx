@@ -63,7 +63,7 @@ export function FAQ() {
 
                 <span
                   className={cn(
-                    "relative flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/6 transition",
+                    "flex-shrink-0 aspect-square h-9 rounded-full border border-white/12 bg-white/6 flex items-center justify-center transition",
                     isOpen ? "rotate-45 border-accent/40 bg-accent/10" : ""
                   )}
                   aria-hidden
