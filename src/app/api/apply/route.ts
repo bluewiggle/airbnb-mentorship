@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1496658018627092586/KdHuS83aiDZyrTfZtacX2xNZk0zHWBHKS05PxHE_k4IGNhsGhk_boBw18xuvj9rF3MWG";
 
 export async function POST(req: Request) {
   try {
@@ -36,20 +35,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: text }, { status: 500 });
     }
 
-    // Send email
-    await resend.emails.send({
-      from: "BNB Lab <onboarding@resend.dev>",
-      to: process.env.ADMIN_NOTIFY_EMAIL!,
-      subject: "New BNB Lab application",
-      html: `
-        <h2>New application</h2>
-        <p><b>Name:</b> ${payload.name}</p>
-        <p><b>Email:</b> ${payload.email}</p>
-        <p><b>Phone:</b> ${payload.phone}</p>
-        <p><b>Instagram:</b> ${payload.instagram}</p>
-        <p><b>Capital:</b> ${payload.capital}</p>
-        <p><b>Ready to start:</b> ${payload.ready_to_start}</p>
-      `,
+    // Send to Discord
+    await fetch(DISCORD_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        embeds: [
+          {
+            title: "New BNB Lab Application",
+            color: 0xff5a5f,
+            fields: [
+              { name: "Name", value: payload.name, inline: true },
+              { name: "Email", value: payload.email, inline: true },
+              { name: "Phone", value: payload.phone, inline: true },
+              { name: "Instagram", value: payload.instagram, inline: true },
+              { name: "Capital", value: payload.capital, inline: true },
+              { name: "Ready to Start", value: payload.ready_to_start, inline: true },
+            ],
+          },
+        ],
+      }),
     });
 
     return NextResponse.json({ ok: true });
