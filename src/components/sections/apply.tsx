@@ -5,13 +5,26 @@ import { useState } from "react";
 
 import { useEffect } from "react";
 
-function CalendlyEmbed() {
+function CalendlyEmbed({ formData }: { formData: Record<string, string> }) {
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://assets.calendly.com/assets/external/widget.js";
     script.async = true;
     document.body.appendChild(script);
-  }, []);
+
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.event === "calendly.event_scheduled") {
+        fetch("/api/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+      }
+    }
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [formData]);
 
   return (
     <>
@@ -40,6 +53,7 @@ export function Apply() {
   const [step, setStep] = useState<"form" | "rejected" | "booking">("form");
   const [capital, setCapital] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Record<string, string>>({});
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,6 +67,15 @@ export function Apply() {
       setStep("rejected");
       return;
     }
+
+    const form = e.currentTarget;
+    setFormData({
+      name: (form.elements.namedItem("name") as HTMLInputElement)?.value || "",
+      email: (form.elements.namedItem("email") as HTMLInputElement)?.value || "",
+      phone: (form.elements.namedItem("phone") as HTMLInputElement)?.value || "",
+      capital,
+      ready_to_start: timeline,
+    });
 
     setStep("booking");
   }
@@ -79,7 +102,7 @@ export function Apply() {
 if (step === "booking") {
   return (
     <Section id="apply">
-      <CalendlyEmbed />
+      <CalendlyEmbed formData={formData} />
     </Section>
   );
 }
@@ -108,12 +131,14 @@ if (step === "booking") {
         className="mx-auto mt-10 max-w-[600px] flex flex-col gap-4"
       >
         <input
+          name="name"
           placeholder="Full name"
           required
           className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
         />
 
         <input
+          name="email"
           type="email"
           placeholder="Email address"
           required
@@ -121,6 +146,7 @@ if (step === "booking") {
         />
 
         <input
+          name="phone"
           placeholder="Phone number"
           required
           className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
