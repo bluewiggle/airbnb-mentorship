@@ -17,15 +17,17 @@ export async function POST(req: Request) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
+        body: JSON.stringify({
         content: `🔥 NEW BOOKED CALL
 
-👤 Name: ${data.name || "N/A"}
-📧 Email: ${data.email || "N/A"}
-📱 Phone: ${data.phone || "N/A"}
-💰 Capital: ${data.capital || "N/A"}
-⏳ Ready: ${data.ready_to_start || "N/A"}`
-      })
+        👤 Name: ${data.name || "N/A"}
+        📧 Email: ${data.email || "N/A"}
+        📱 Phone: ${data.phone || "N/A"}
+        💰 Capital: ${data.capital || "N/A"}
+        ⏳ Ready: ${data.ready_to_start || "N/A"}
+
+        🎯 Assigned To: ${data.referrer || "Unassigned"}`
+        })
     });
 
     return Response.json({ success: true });

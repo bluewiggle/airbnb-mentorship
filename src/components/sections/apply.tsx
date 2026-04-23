@@ -14,9 +14,7 @@ function CalendlyEmbed() {
       if (e.data.event === "calendly.event_scheduled") {
         const stored = localStorage.getItem("lead_data");
 
-        if (!stored) {
-          return;
-        }
+        if (!stored) return;
 
         const data = JSON.parse(stored);
 
@@ -26,11 +24,8 @@ function CalendlyEmbed() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify(data)
-        })
-        .then(res => res.json())
-        .catch(err => console.error("ERROR:", err));
+        });
 
-        // optional cleanup
         localStorage.removeItem("lead_data");
       }
     }
@@ -66,6 +61,7 @@ function CalendlyEmbed() {
 }
 
 export function Apply() {
+  const [referrer, setReferrer] = useState<string | null>(null);
   const [step, setStep] = useState<"form" | "rejected" | "booking">("form");
   const [capital, setCapital] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string | null>(null);
@@ -76,7 +72,16 @@ export function Apply() {
     phone: "",
     capital: "",
     ready_to_start: "",
+    referrer: ""
   });
+
+  // ✅ GET REFERRER FROM URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has("l")) setReferrer("Liam");
+    else if (params.has("n")) setReferrer("Noah");
+  }, []);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -91,7 +96,14 @@ export function Apply() {
       return;
     }
 
-    localStorage.setItem("lead_data", JSON.stringify(formData));
+    // ✅ attach referrer before saving
+    const finalData = {
+      ...formData,
+      referrer: referrer || "Unassigned"
+    };
+
+    localStorage.setItem("lead_data", JSON.stringify(finalData));
+
     setStep("booking");
   }
 
@@ -105,7 +117,6 @@ export function Apply() {
 
           <p className="mt-4 text-white/70 leading-[1.7]">
             Right now, we only work with people who have at least $10k ready to deploy.
-            This ensures you can actually execute and get results.
           </p>
         </div>
       </Section>
@@ -123,12 +134,6 @@ export function Apply() {
   return (
     <Section id="apply">
       <div className="text-center">
-        <div className="inline-flex items-center gap-3 text-[12px] font-extrabold uppercase tracking-[0.26em] text-white/70">
-          <span className="h-px w-14 bg-white/18" />
-          Apply
-          <span className="h-px w-14 bg-white/18" />
-        </div>
-
         <h2 className="mt-6 text-[clamp(34px,4.5vw,48px)] font-extrabold text-white">
           See if you qualify
         </h2>
@@ -229,10 +234,6 @@ export function Apply() {
         <button className="mt-6 rounded-full bg-accent px-6 py-3 font-extrabold text-black">
           Continue
         </button>
-
-        <p className="text-center text-[13px] text-white/50 mt-2">
-          Limited spots each month
-        </p>
       </form>
     </Section>
   );
