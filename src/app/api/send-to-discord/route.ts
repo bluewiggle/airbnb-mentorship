@@ -1,25 +1,34 @@
 export async function POST(req: Request) {
-  const data = await req.json();
+  try {
+    const data = await req.json();
+    console.log("DATA RECEIVED:", data);
 
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL!;
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
-  const message = {
-    content: `🔥 NEW BOOKED CALL
+    if (!webhookUrl) {
+      console.error("NO WEBHOOK URL SET");
+      return Response.json({ error: "no webhook" }, { status: 500 });
+    }
+
+    const discordRes = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        content: `🔥 TEST MESSAGE
 
 Name: ${data.name}
-Email: ${data.email}
-Phone: ${data.phone}
-Capital: ${data.capital}
-Ready: ${data.ready_to_start}`
-  };
+Email: ${data.email}`
+      })
+    });
 
-  await fetch(webhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(message)
-  });
+    console.log("DISCORD STATUS:", discordRes.status);
 
-  return Response.json({ success: true });
+    return Response.json({ success: true });
+
+  } catch (err) {
+    console.error("API ERROR:", err);
+    return Response.json({ error: "failed" }, { status: 500 });
+  }
 }
