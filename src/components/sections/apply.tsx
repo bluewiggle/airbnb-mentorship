@@ -11,20 +11,10 @@ function CalendlyEmbed({ formData }: { formData: Record<string, string> }) {
     script.src = "https://assets.calendly.com/assets/external/widget.js";
     script.async = true;
     document.body.appendChild(script);
+  }, []);
 
-    function handleMessage(e: MessageEvent) {
-      if (e.data?.event === "calendly.event_scheduled") {
-        fetch("/api/apply", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-      }
-    }
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [formData]);
+  const notes = `Phone: ${formData.phone} | Capital: ${formData.capital} | Ready to start: ${formData.ready_to_start}`;
+  const calendlyUrl = `https://calendly.com/elevatedapartments/30min?name=${encodeURIComponent(formData.name)}&email=${encodeURIComponent(formData.email)}&a1=${encodeURIComponent(notes)}`;
 
   return (
     <>
@@ -41,8 +31,8 @@ function CalendlyEmbed({ formData }: { formData: Record<string, string> }) {
       <div className="mt-10 max-w-[900px] mx-auto">
         <div
           className="calendly-inline-widget w-full"
-          data-url="https://calendly.com/elevatedapartments/30min"
-          style={{ minWidth: "320px", height: "1000px" }} // 🔥 FIXED HEIGHT
+          data-url={calendlyUrl}
+          style={{ minWidth: "320px", height: "1000px" }}
         />
       </div>
     </>
