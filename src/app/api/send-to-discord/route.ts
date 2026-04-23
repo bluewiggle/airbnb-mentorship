@@ -1,7 +1,6 @@
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    console.log("DATA RECEIVED:", data);
 
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
@@ -31,7 +30,5 @@ export async function POST(req: Request) {
 
     return Response.json({ success: true });
   } catch (error) {
-    console.error("Error sending to Discord:", error);
-    return Response.json({ success: false }, { status: 500 });
   }
 }
