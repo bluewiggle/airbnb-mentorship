@@ -75,13 +75,14 @@ export function Apply() {
     referrer: ""
   });
 
-  // ✅ GET REFERRER FROM URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get("ref");
 
-    if (params.has("l")) setReferrer("Liam");
-    else if (params.has("n")) setReferrer("Noah");
-  }, []);
+  if (ref === "l") setReferrer("Liam");
+  else if (ref === "n") setReferrer("Noah");
+  else setReferrer(null);
+}, []);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
