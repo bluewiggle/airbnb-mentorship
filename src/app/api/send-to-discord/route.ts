@@ -6,12 +6,14 @@ export async function POST(req: Request) {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
     if (!webhookUrl) {
-      console.error("NO WEBHOOK URL SET");
-      return Response.json({ error: "no webhook" }, { status: 500 });
+      return Response.json(
+        { success: false, error: "Missing DISCORD_WEBHOOK_URL" },
+        { status: 500 }
+      );
     }
 
     // ✅ SEND TO DISCORD
-    const discordRes = await fetch(webhookUrl, {
+    await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -27,12 +29,9 @@ export async function POST(req: Request) {
       })
     });
 
-    console.log("DISCORD STATUS:", discordRes.status);
-
     return Response.json({ success: true });
-
-  } catch (err) {
-    console.error("API ERROR:", err);
-    return Response.json({ error: "failed" }, { status: 500 });
+  } catch (error) {
+    console.error("Error sending to Discord:", error);
+    return Response.json({ success: false }, { status: 500 });
   }
 }
