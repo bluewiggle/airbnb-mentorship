@@ -15,13 +15,10 @@ function CalendlyEmbed() {
         const stored = localStorage.getItem("lead_data");
 
         if (!stored) {
-          console.log("No stored lead data");
           return;
         }
 
         const data = JSON.parse(stored);
-
-        console.log("SENDING TO DISCORD:", data);
 
         fetch("/api/send-to-discord", {
           method: "POST",
@@ -31,7 +28,6 @@ function CalendlyEmbed() {
           body: JSON.stringify(data)
         })
         .then(res => res.json())
-        .then(res => console.log("API RESPONSE:", res))
         .catch(err => console.error("ERROR:", err));
 
         // optional cleanup
