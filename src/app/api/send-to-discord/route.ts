@@ -10,16 +10,20 @@ export async function POST(req: Request) {
       return Response.json({ error: "no webhook" }, { status: 500 });
     }
 
+    // ✅ SEND TO DISCORD
     const discordRes = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        content: `🔥 TEST MESSAGE
+        content: `🔥 NEW BOOKED CALL
 
-Name: ${data.name}
-Email: ${data.email}`
+👤 Name: ${data.name || "N/A"}
+📧 Email: ${data.email || "N/A"}
+📱 Phone: ${data.phone || "N/A"}
+💰 Capital: ${data.capital || "N/A"}
+⏳ Ready: ${data.ready_to_start || "N/A"}`
       })
     });
 
