@@ -1,17 +1,33 @@
 "use client";
 
 import { Section } from "@/components/ui";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-import { useEffect } from "react";
-
-function CalendlyEmbed() {
+function CalendlyEmbed({ formData }: any) {
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://assets.calendly.com/assets/external/widget.js";
     script.async = true;
     document.body.appendChild(script);
-  }, []);
+
+    function handleCalendlyEvent(e: any) {
+      if (e.data.event === "calendly.event_scheduled") {
+        fetch("/api/send-to-discord", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+      }
+    }
+
+    window.addEventListener("message", handleCalendlyEvent);
+
+    return () => {
+      window.removeEventListener("message", handleCalendlyEvent);
+    };
+  }, [formData]);
 
   return (
     <>
@@ -29,7 +45,7 @@ function CalendlyEmbed() {
         <div
           className="calendly-inline-widget w-full"
           data-url="https://calendly.com/elevatedapartments/30min"
-          style={{ minWidth: "320px", height: "1000px" }} // 🔥 FIXED HEIGHT
+          style={{ minWidth: "320px", height: "1000px" }}
         />
       </div>
     </>
@@ -40,6 +56,14 @@ export function Apply() {
   const [step, setStep] = useState<"form" | "rejected" | "booking">("form");
   const [capital, setCapital] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    capital: "",
+    ready_to_start: "",
+  });
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,7 +81,6 @@ export function Apply() {
     setStep("booking");
   }
 
-  // ❌ REJECTED
   if (step === "rejected") {
     return (
       <Section id="apply">
@@ -75,16 +98,14 @@ export function Apply() {
     );
   }
 
-// ✅ BOOKING (Calendly inline)
-if (step === "booking") {
-  return (
-    <Section id="apply">
-      <CalendlyEmbed />
-    </Section>
-  );
-}
+  if (step === "booking") {
+    return (
+      <Section id="apply">
+        <CalendlyEmbed formData={formData} />
+      </Section>
+    );
+  }
 
-  // ✅ FORM
   return (
     <Section id="apply">
       <div className="text-center">
@@ -110,6 +131,10 @@ if (step === "booking") {
         <input
           placeholder="Full name"
           required
+          value={formData.name}
+          onChange={(e) =>
+            setFormData({ ...formData, name: e.target.value })
+          }
           className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
         />
 
@@ -117,16 +142,23 @@ if (step === "booking") {
           type="email"
           placeholder="Email address"
           required
+          value={formData.email}
+          onChange={(e) =>
+            setFormData({ ...formData, email: e.target.value })
+          }
           className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
         />
 
         <input
           placeholder="Phone number"
           required
+          value={formData.phone}
+          onChange={(e) =>
+            setFormData({ ...formData, phone: e.target.value })
+          }
           className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
         />
 
-        {/* CAPITAL */}
         <div className="mt-2">
           <div className="text-white/60 text-sm mb-2">Capital ready</div>
           <div className="grid grid-cols-2 gap-2">
@@ -134,7 +166,10 @@ if (step === "booking") {
               <button
                 key={option}
                 type="button"
-                onClick={() => setCapital(option)}
+                onClick={() => {
+                  setCapital(option);
+                  setFormData({ ...formData, capital: option });
+                }}
                 className={`rounded-[10px] px-4 py-3 border ${
                   capital === option
                     ? "bg-accent text-black"
@@ -147,7 +182,6 @@ if (step === "booking") {
           </div>
         </div>
 
-        {/* TIMELINE */}
         <div className="mt-2">
           <div className="text-white/60 text-sm mb-2">
             When are you ready to start?
@@ -162,7 +196,10 @@ if (step === "booking") {
               <button
                 key={option}
                 type="button"
-                onClick={() => setTimeline(option)}
+                onClick={() => {
+                  setTimeline(option);
+                  setFormData({ ...formData, ready_to_start: option });
+                }}
                 className={`rounded-[10px] px-4 py-3 border ${
                   timeline === option
                     ? "bg-accent text-black"
