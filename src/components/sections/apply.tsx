@@ -3,7 +3,7 @@
 import { Section } from "@/components/ui";
 import { useState, useEffect } from "react";
 
-function CalendlyEmbed({ formData }: any) {
+function CalendlyEmbed() {
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://assets.calendly.com/assets/external/widget.js";
@@ -12,13 +12,30 @@ function CalendlyEmbed({ formData }: any) {
 
     function handleCalendlyEvent(e: any) {
       if (e.data.event === "calendly.event_scheduled") {
+        const stored = localStorage.getItem("lead_data");
+
+        if (!stored) {
+          console.log("No stored lead data");
+          return;
+        }
+
+        const data = JSON.parse(stored);
+
+        console.log("SENDING TO DISCORD:", data);
+
         fetch("/api/send-to-discord", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify(formData),
-        });
+          body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(res => console.log("API RESPONSE:", res))
+        .catch(err => console.error("ERROR:", err));
+
+        // optional cleanup
+        localStorage.removeItem("lead_data");
       }
     }
 
@@ -27,7 +44,7 @@ function CalendlyEmbed({ formData }: any) {
     return () => {
       window.removeEventListener("message", handleCalendlyEvent);
     };
-  }, [formData]);
+  }, []);
 
   return (
     <>
@@ -78,6 +95,7 @@ export function Apply() {
       return;
     }
 
+    localStorage.setItem("lead_data", JSON.stringify(formData));
     setStep("booking");
   }
 
@@ -101,7 +119,7 @@ export function Apply() {
   if (step === "booking") {
     return (
       <Section id="apply">
-        <CalendlyEmbed formData={formData} />
+        <CalendlyEmbed />
       </Section>
     );
   }
