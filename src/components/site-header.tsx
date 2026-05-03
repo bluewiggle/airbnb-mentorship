@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/components/utils";
 import Image from "next/image";
+import { trackMetaCustom } from "@/lib/track";
 
 const links = [
   { href: "#how", label: "Process" },
@@ -54,6 +55,9 @@ export function SiteHeader({ onApplyClick }: Props) {
         <div className="flex items-center gap-2">
           <a
             href="#apply"
+            onClick={() => {
+              trackMetaCustom("ApplyClicked", { location: "header" });
+            }}
             className="inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-accent px-4 py-2.5 text-[14px] font-extrabold text-black transition will-change-transform hover:-translate-y-0.5 hover:shadow-glow"
           >
             Apply

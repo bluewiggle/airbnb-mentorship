@@ -1,6 +1,7 @@
 "use client";
 
 import { H1, P, Section } from "@/components/ui";
+import { trackMetaCustom } from "@/lib/track";
 
 type Props = {
   onApplyClick: () => void;
@@ -42,6 +43,9 @@ export function Hero({ onApplyClick }: Props) {
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <a
             href="#apply"
+            onClick={() => {
+              trackMetaCustom("ApplyClicked", { location: "hero" });
+            }}
             className="inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-accent px-5 py-3 text-[14px] font-extrabold text-black transition will-change-transform hover:-translate-y-0.5 hover:shadow-glow"
           >
             APPLY NOW
@@ -49,6 +53,9 @@ export function Hero({ onApplyClick }: Props) {
 
           <a
             href="#how"
+            onClick={() => {
+              trackMetaCustom("WhatsIncludedClicked", { location: "hero" });
+            }}
             className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[14px] font-extrabold text-white/80 hover:bg-white/10 hover:text-white"
           >
             What's included

@@ -2,6 +2,7 @@
 
 import { Section } from "@/components/ui";
 import { useState, useEffect } from "react";
+import { track, trackMeta, trackMetaCustom } from "@/lib/track";
 
 function CalendlyEmbed() {
   useEffect(() => {
@@ -12,6 +13,10 @@ function CalendlyEmbed() {
 
     function handleCalendlyEvent(e: any) {
       if (e.data.event === "calendly.event_scheduled") {
+        trackMeta("Schedule", { source: "calendly" });
+        trackMetaCustom("CalendlyScheduled", { source: "calendly" });
+        track("calendly_scheduled", { source: "calendly" });
+
         const stored = localStorage.getItem("lead_data");
 
         if (!stored) return;
@@ -88,11 +93,28 @@ useEffect(() => {
     e.preventDefault();
 
     if (!capital || !timeline) {
+      trackMetaCustom("ApplicationSubmitAttemptIncomplete");
       alert("Please complete all fields");
       return;
     }
 
+    trackMetaCustom("ApplicationSubmitted", {
+      capital,
+      ready_to_start: timeline,
+      referrer: referrer || "Unassigned"
+    });
+    track("application_submitted", {
+      capital,
+      ready_to_start: timeline,
+      referrer: referrer || "Unassigned"
+    });
+
     if (capital === "<10k") {
+      trackMetaCustom("ApplicationRejected", {
+        capital,
+        ready_to_start: timeline,
+        referrer: referrer || "Unassigned"
+      });
       setStep("rejected");
       return;
     }
@@ -104,6 +126,23 @@ useEffect(() => {
     };
 
     localStorage.setItem("lead_data", JSON.stringify(finalData));
+
+    trackMeta("Lead", {
+      content_name: "BNB Lab Application",
+      capital,
+      ready_to_start: timeline,
+      referrer: referrer || "Unassigned"
+    });
+    trackMetaCustom("CalendlyOpened", {
+      capital,
+      ready_to_start: timeline,
+      referrer: referrer || "Unassigned"
+    });
+    track("lead", {
+      capital,
+      ready_to_start: timeline,
+      referrer: referrer || "Unassigned"
+    });
 
     setStep("booking");
   }
@@ -189,6 +228,7 @@ useEffect(() => {
                 onClick={() => {
                   setCapital(option);
                   setFormData({ ...formData, capital: option });
+                  trackMetaCustom("CapitalSelected", { capital: option });
                 }}
                 className={`rounded-[10px] px-4 py-3 border ${
                   capital === option
@@ -219,6 +259,7 @@ useEffect(() => {
                 onClick={() => {
                   setTimeline(option);
                   setFormData({ ...formData, ready_to_start: option });
+                  trackMetaCustom("TimelineSelected", { ready_to_start: option });
                 }}
                 className={`rounded-[10px] px-4 py-3 border ${
                   timeline === option
@@ -232,7 +273,13 @@ useEffect(() => {
           </div>
         </div>
 
-        <button className="mt-6 rounded-full bg-accent px-6 py-3 font-extrabold text-black">
+        <button
+          type="submit"
+          onClick={() => {
+            trackMetaCustom("ContinueClicked", { location: "apply_form" });
+          }}
+          className="mt-6 rounded-full bg-accent px-6 py-3 font-extrabold text-black"
+        >
           Continue
         </button>
       </form>

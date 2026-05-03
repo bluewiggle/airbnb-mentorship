@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { track } from "@/lib/track";
+import { track, trackMeta, trackMetaCustom } from "@/lib/track";
 
 type Props = {
   open: boolean;
@@ -59,6 +59,7 @@ export default function ApplicationModal({ open, onClose, title = "Apply" }: Pro
     document.body.style.overflow = "hidden";
 
     track("form_started");
+    trackMetaCustom("ApplicationModalOpened");
 
     setSuccess(false);
     setTouchedSubmit(false);
@@ -191,6 +192,11 @@ export default function ApplicationModal({ open, onClose, title = "Apply" }: Pro
     }
 
     track("form_submitted");
+    trackMeta("Lead", { content_name: "BNB Lab Modal Application" });
+    trackMetaCustom("ApplicationModalSubmitted", {
+      capital: form.capital,
+      ready_to_start: form.ready_to_start,
+    });
     setSuccess(true);
     setLoading(false);
   };
