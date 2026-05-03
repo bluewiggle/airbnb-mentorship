@@ -63,6 +63,30 @@ export default function RootLayout({
           </>
         )}
 
+        {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
+          <>
+            <Script
+              src="https://connect.facebook.net/en_US/fbevents.js"
+              strategy="afterInteractive"
+            />
+            <Script id="meta-pixel-init" strategy="afterInteractive">
+              {`
+                fbq('init', '${process.env.NEXT_PUBLIC_META_PIXEL_ID}');
+                fbq('track', 'PageView');
+              `}
+            </Script>
+            <noscript>
+              <img
+                height="1"
+                width="1"
+                style={{ display: 'none' }}
+                src={`https://www.facebook.com/tr?id=${process.env.NEXT_PUBLIC_META_PIXEL_ID}&ev=PageView&noscript=1`}
+                alt=""
+              />
+            </noscript>
+          </>
+        )}
+
         {children}
       </body>
     </html>
