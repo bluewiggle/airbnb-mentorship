@@ -7,29 +7,35 @@ declare global {
   }
 }
 
-const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+const META_PIXEL_IDS =
+  process.env.NEXT_PUBLIC_META_PIXEL_IDS
+    ?.split(",")
+    .map((id) => id.trim())
+    .filter(Boolean) ?? [];
 
 function sendMetaFallback(eventName: string, params: EventParams = {}) {
   if (typeof window === "undefined") return;
-  if (!META_PIXEL_ID) return;
+  if (META_PIXEL_IDS.length === 0) return;
 
-  const url = new URL("https://www.facebook.com/tr");
+  META_PIXEL_IDS.forEach((pixelId) => {
+    const url = new URL("https://www.facebook.com/tr");
 
-  url.searchParams.set("id", META_PIXEL_ID);
-  url.searchParams.set("ev", eventName);
-  url.searchParams.set("dl", window.location.href);
-  url.searchParams.set("rl", document.referrer || "");
-  url.searchParams.set("if", "false");
-  url.searchParams.set("ts", Date.now().toString());
+    url.searchParams.set("id", pixelId);
+    url.searchParams.set("ev", eventName);
+    url.searchParams.set("dl", window.location.href);
+    url.searchParams.set("rl", document.referrer || "");
+    url.searchParams.set("if", "false");
+    url.searchParams.set("ts", Date.now().toString());
 
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      url.searchParams.set(`cd[${key}]`, String(value));
-    }
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(`cd[${key}]`, String(value));
+      }
+    });
+
+    const img = new Image();
+    img.src = url.toString();
   });
-
-  const img = new Image();
-  img.src = url.toString();
 }
 
 export function track(eventName: string, params: EventParams = {}) {

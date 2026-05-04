@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+// @ts-ignore
 import "./globals.css";
 import SmoothScroll from "@/components/smooth-scroll";
 import Script from "next/script";
@@ -39,7 +40,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
-  const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const metaPixelIds = process.env.NEXT_PUBLIC_META_PIXEL_IDS
+    ?.split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 
   return (
     <html lang="en">
@@ -68,7 +72,7 @@ export default function RootLayout({
         )}
 
         {/* Meta Pixel */}
-        {metaPixelId && (
+        {metaPixelIds && metaPixelIds.length > 0 && (
           <>
             <Script id="meta-pixel" strategy="afterInteractive">
               {`
@@ -81,7 +85,7 @@ export default function RootLayout({
                 s.parentNode.insertBefore(t,s)}(window, document,'script',
                 'https://connect.facebook.net/en_US/fbevents.js');
 
-                fbq('init', '${metaPixelId}');
+                ${metaPixelIds.map((id) => `fbq('init', '${id}');`).join('\n')}
                 fbq('track', 'PageView');
               `}
             </Script>
@@ -91,7 +95,7 @@ export default function RootLayout({
                 height="1"
                 width="1"
                 style={{ display: "none" }}
-                src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
+                src={`https://www.facebook.com/tr?id=${metaPixelIds[0]}&ev=PageView&noscript=1`}
                 alt=""
               />
             </noscript>
