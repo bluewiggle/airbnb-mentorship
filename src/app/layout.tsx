@@ -86,7 +86,7 @@ export default function RootLayout({
                 'https://connect.facebook.net/en_US/fbevents.js');
 
                 ${metaPixelIds.map((id) => `fbq('init', '${id}');`).join('\n')}
-                fbq('track', 'PageView');
+                ${metaPixelIds.map((id) => `fbq('trackSingle', '${id}', 'PageView');`).join('\n')}
               `}
             </Script>
 
