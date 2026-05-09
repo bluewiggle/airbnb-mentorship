@@ -1,14 +1,13 @@
 import { NextRequest } from "next/server";
 
-type Booking = {
-  name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  instagram?: string | null;
-  capital?: string | null;
-  ready_to_start?: string | null;
-  referrer?: string | null;
-  starts_at?: string | null;
+type CalendlyEvent = {
+  name?: string;
+  start_time?: string;
+  end_time?: string;
+  event_memberships?: {
+    user_name?: string;
+    user_email?: string;
+  }[];
 };
 
 function clean(value: unknown, maxLength = 120) {
@@ -34,34 +33,63 @@ function formatMelbourneDateTime(value: string) {
 function getTomorrowMelbourneRangeUtc() {
   const now = new Date();
 
-  const melbourneParts = new Intl.DateTimeFormat("en-CA", {
+  const melbourneDate = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Australia/Melbourne",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(now);
+  }).format(now);
 
-  const year = Number(melbourneParts.find((p) => p.type === "year")?.value);
-  const month = Number(melbourneParts.find((p) => p.type === "month")?.value);
-  const day = Number(melbourneParts.find((p) => p.type === "day")?.value);
+  const tomorrow = new Date(`${melbourneDate}T00:00:00+10:00`);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const todayMelbourneAsUtc = new Date(Date.UTC(year, month - 1, day));
-  const tomorrowMelbourneAsUtc = new Date(todayMelbourneAsUtc);
-  tomorrowMelbourneAsUtc.setUTCDate(tomorrowMelbourneAsUtc.getUTCDate() + 1);
-
-  const nextDayMelbourneAsUtc = new Date(tomorrowMelbourneAsUtc);
-  nextDayMelbourneAsUtc.setUTCDate(nextDayMelbourneAsUtc.getUTCDate() + 1);
-
-  const startLocalString = tomorrowMelbourneAsUtc.toISOString().slice(0, 10);
-  const endLocalString = nextDayMelbourneAsUtc.toISOString().slice(0, 10);
-
-  const startUtc = new Date(`${startLocalString}T00:00:00+10:00`);
-  const endUtc = new Date(`${endLocalString}T00:00:00+10:00`);
+  const dayAfterTomorrow = new Date(tomorrow);
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
   return {
-    startUtc: startUtc.toISOString(),
-    endUtc: endUtc.toISOString(),
+    startUtc: tomorrow.toISOString(),
+    endUtc: dayAfterTomorrow.toISOString(),
   };
+}
+
+async function getCalendlyUserUri(token: string) {
+  const res = await fetch("https://api.calendly.com/users/me", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to fetch Calendly user: ${text}`);
+  }
+
+  const data = await res.json();
+  return data.resource.uri as string;
+}
+
+async function getCalendlyEvents(token: string, userUri: string, startUtc: string, endUtc: string) {
+  const params = new URLSearchParams({
+    user: userUri,
+    min_start_time: startUtc,
+    max_start_time: endUtc,
+    status: "active",
+    sort: "start_time:asc",
+  });
+
+  const res = await fetch(`https://api.calendly.com/scheduled_events?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to fetch Calendly events: ${text}`);
+  }
+
+  const data = await res.json();
+  return (data.collection || []) as CalendlyEvent[];
 }
 
 export async function GET(req: NextRequest) {
@@ -72,12 +100,23 @@ export async function GET(req: NextRequest) {
       return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const melbourneHour = new Intl.DateTimeFormat("en-AU", {
+      timeZone: "Australia/Melbourne",
+      hour: "numeric",
+      hour12: false,
+    }).format(new Date());
 
-    if (!webhookUrl || !supabaseUrl || !serviceRoleKey) {
-      console.error("Missing required environment variables.");
+    if (Number(melbourneHour) !== 21) {
+      return Response.json({
+        success: true,
+        message: "Not 9pm Melbourne time. Skipping reminder.",
+      });
+    }
+    const calendlyToken = process.env.CALENDLY_TOKEN;
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+
+    if (!calendlyToken || !webhookUrl) {
+      console.error("Missing CALENDLY_TOKEN or DISCORD_WEBHOOK_URL");
 
       return Response.json(
         { success: false, error: "Server configuration error." },
@@ -87,62 +126,38 @@ export async function GET(req: NextRequest) {
 
     const { startUtc, endUtc } = getTomorrowMelbourneRangeUtc();
 
-    const query = new URLSearchParams({
-      select: "name,email,phone,instagram,capital,ready_to_start,referrer,starts_at",
-      starts_at: `gte.${startUtc}`,
-      order: "starts_at.asc",
-    });
+    const userUri = await getCalendlyUserUri(calendlyToken);
+    const events = await getCalendlyEvents(calendlyToken, userUri, startUtc, endUtc);
 
-    const bookingsRes = await fetch(
-      `${supabaseUrl}/rest/v1/Supabase?${query.toString()}&starts_at=lt.${endUtc}`
-      {
-        method: "GET",
-        headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
-        },
-      }
-    );
-
-    if (!bookingsRes.ok) {
-      const text = await bookingsRes.text();
-      console.error("Failed to fetch booked calls:", text);
-
-      return Response.json(
-        { success: false, error: "Failed to fetch booked calls." },
-        { status: 500 }
-      );
-    }
-
-    const bookings = (await bookingsRes.json()) as Booking[];
-
-    if (!bookings.length) {
+    if (!events.length) {
       return Response.json({
         success: true,
-        message: "No bookings tomorrow. No Discord reminder sent.",
+        message: "No Calendly bookings tomorrow. No Discord reminder sent.",
       });
     }
 
-    const bookingLines = bookings
-      .map((booking, index) => {
-        const time = booking.starts_at
-          ? formatMelbourneDateTime(booking.starts_at)
+    const eventLines = events
+      .map((event, index) => {
+        const time = event.start_time
+          ? formatMelbourneDateTime(event.start_time)
           : "Time missing";
 
+        const host =
+          event.event_memberships?.[0]?.user_name ||
+          event.event_memberships?.[0]?.user_email ||
+          "N/A";
+
         return `${index + 1}. ${time}
-👤 ${clean(booking.name) || "N/A"}
-📧 ${clean(booking.email) || "N/A"}
-📱 ${clean(booking.phone) || "N/A"}
-💰 ${clean(booking.capital) || "N/A"}
-🎯 ${clean(booking.referrer) || "Unassigned"}`;
+📞 ${clean(event.name) || "Booked call"}
+👤 Host: ${clean(host)}`;
       })
       .join("\n\n");
 
     const message = `🌙 DAILY CALL REMINDER
 
-You have ${bookings.length} call${bookings.length === 1 ? "" : "s"} tomorrow:
+You have ${events.length} Calendly call${events.length === 1 ? "" : "s"} tomorrow:
 
-${bookingLines}`;
+${eventLines}`;
 
     const discordRes = await fetch(webhookUrl, {
       method: "POST",
@@ -169,7 +184,7 @@ ${bookingLines}`;
 
     return Response.json({
       success: true,
-      bookings: bookings.length,
+      events: events.length,
     });
   } catch (error) {
     console.error("Discord reminder cron failed:", error);
