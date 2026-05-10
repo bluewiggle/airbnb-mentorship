@@ -1,9 +1,55 @@
+type CalendlyEventResponse = {
+  resource?: {
+    name?: string;
+    start_time?: string;
+    end_time?: string;
+  };
+};
+
 function clean(value: unknown, maxLength = 100) {
   return String(value || "")
     .trim()
     .replaceAll("@everyone", "[everyone]")
     .replaceAll("@here", "[here]")
     .slice(0, maxLength);
+}
+
+function formatMelbourneDateTime(value: string) {
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Melbourne",
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(value));
+}
+
+async function getCalendlyBookingTime(eventUri: string | null | undefined) {
+  const calendlyToken = process.env.CALENDLY_TOKEN;
+
+  if (!calendlyToken || !eventUri) {
+    return null;
+  }
+
+  const res = await fetch(eventUri, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${calendlyToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("Failed to fetch Calendly event:", text);
+    return null;
+  }
+
+  const data = (await res.json()) as CalendlyEventResponse;
+
+  return data.resource?.start_time || null;
 }
 
 export async function POST(req: Request) {
@@ -21,6 +67,14 @@ export async function POST(req: Request) {
 
     const data = await req.json();
 
+    const bookingStartTime = await getCalendlyBookingTime(
+      data.calendly_event_uri
+    );
+
+    const formattedBookingTime = bookingStartTime
+      ? formatMelbourneDateTime(bookingStartTime)
+      : "Could not fetch booking time";
+
     const payload = {
       name: clean(data.name, 80),
       email: clean(data.email, 120),
@@ -28,6 +82,7 @@ export async function POST(req: Request) {
       capital: clean(data.capital, 60),
       ready_to_start: clean(data.ready_to_start, 60),
       referrer: clean(data.referrer, 80),
+      booking_time: clean(formattedBookingTime, 120),
     };
 
     const message = `🔥 NEW BOOKED CALL
@@ -37,6 +92,7 @@ export async function POST(req: Request) {
 📱 Phone: ${payload.phone || "N/A"}
 💰 Capital: ${payload.capital || "N/A"}
 ⏳ Ready: ${payload.ready_to_start || "N/A"}
+🕘 Booking Time: ${payload.booking_time || "N/A"}
 
 🎯 Assigned To: ${payload.referrer || "Unassigned"}`;
 

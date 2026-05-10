@@ -23,12 +23,20 @@ function CalendlyEmbed() {
 
         const data = JSON.parse(stored);
 
+        const calendlyPayload = e.data.payload || {};
+
+        const dataWithBookingTime = {
+          ...data,
+          calendly_event_uri: calendlyPayload.event?.uri || null,
+          calendly_invitee_uri: calendlyPayload.invitee?.uri || null,
+        };
+
         fetch("/api/send-to-discord", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(dataWithBookingTime),
         }).catch((error) => {
           console.error("Failed to send Discord notification:", error);
         });
