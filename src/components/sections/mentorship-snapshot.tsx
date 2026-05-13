@@ -8,11 +8,11 @@ const ITEMS = [
     body: "Everything from zero to your first live, profitable property. No gaps, no guesswork.",
     icon: "/Blueprint.png",
   },
-  {
-    title: "Weekly Group Sessions",
-    body: "Join weekly calls where we break down strategy, answer questions, and help you move forward faster alongside others on the same path.",
-    icon: "/Group Sessions.png",
-  },
+  //{
+  //  title: "Weekly Group Sessions",
+  //  body: "Join weekly calls where we break down strategy, answer questions, and help you move forward faster alongside others on the same path.",
+  //  icon: "/Group Sessions.png",
+  //},
   {
     title: "1:1 Progress Calls",
     body: "Work directly with us to stay on track, solve bottlenecks, and get clear guidance based on your exact situation.",
