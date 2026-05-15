@@ -1,12 +1,23 @@
 import { NextRequest } from "next/server";
 
 type CalendlyEvent = {
+  uri?: string;
   name?: string;
   start_time?: string;
   end_time?: string;
   event_memberships?: {
     user_name?: string;
     user_email?: string;
+  }[];
+};
+
+type CalendlyInvitee = {
+  name?: string;
+  email?: string;
+  text_reminder_number?: string;
+  questions_and_answers?: {
+    question?: string;
+    answer?: string;
   }[];
 };
 
@@ -92,6 +103,35 @@ async function getCalendlyEvents(token: string, userUri: string, startUtc: strin
   return (data.collection || []) as CalendlyEvent[];
 }
 
+async function getCalendlyInvitees(token: string, eventUri?: string) {
+  if (!eventUri) return [];
+
+  const eventUuid = eventUri.split("/").pop();
+
+  if (!eventUuid) return [];
+
+  const res = await fetch(`https://api.calendly.com/scheduled_events/${eventUuid}/invitees`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Failed to fetch invitees for event ${eventUuid}:`, text);
+    return [];
+  }
+
+  const data = await res.json();
+  return (data.collection || []) as CalendlyInvitee[];
+}
+
+function getAnswer(invitee: CalendlyInvitee, keyword: string) {
+  return invitee.questions_and_answers?.find((item) =>
+    String(item.question || "").toLowerCase().includes(keyword.toLowerCase())
+  )?.answer;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -112,6 +152,7 @@ export async function GET(req: NextRequest) {
         message: "Not 9pm Melbourne time. Skipping reminder.",
       });
     }
+
     const calendlyToken = process.env.CALENDLY_TOKEN;
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
@@ -136,28 +177,43 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const eventLines = events
-      .map((event, index) => {
+    const eventLines = await Promise.all(
+      events.map(async (event, index) => {
         const time = event.start_time
           ? formatMelbourneDateTime(event.start_time)
           : "Time missing";
 
-        const host =
-          event.event_memberships?.[0]?.user_name ||
-          event.event_memberships?.[0]?.user_email ||
+        const invitees = await getCalendlyInvitees(calendlyToken, event.uri);
+        const invitee = invitees[0];
+
+        const name = invitee?.name || "Name missing";
+        const email = invitee?.email || "Email missing";
+        const phone =
+          getAnswer(invitee || {}, "phone") ||
+          invitee?.text_reminder_number ||
+          "Phone missing";
+
+        const capital = getAnswer(invitee || {}, "capital") || "N/A";
+        const timeline =
+          getAnswer(invitee || {}, "ready") ||
+          getAnswer(invitee || {}, "start") ||
           "N/A";
 
         return `${index + 1}. ${time}
 📞 ${clean(event.name) || "Booked call"}
-👤 Host: ${clean(host)}`;
+👤 Name: ${clean(name)}
+📧 Email: ${clean(email)}
+📱 Phone: ${clean(phone)}
+💰 Capital: ${clean(capital)}
+⏳ Ready to start: ${clean(timeline)}`;
       })
-      .join("\n\n");
+    );
 
     const message = `🌙 DAILY CALL REMINDER
 
 You have ${events.length} Calendly call${events.length === 1 ? "" : "s"} tomorrow:
 
-${eventLines}`;
+${eventLines.join("\n\n")}`;
 
     const discordRes = await fetch(webhookUrl, {
       method: "POST",
