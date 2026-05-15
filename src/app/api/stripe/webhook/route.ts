@@ -34,8 +34,10 @@ function formatMelbourneDateTimeFromUnix(unixSeconds: number) {
 }
 
 function timingSafeCompare(a: string, b: string) {
-  const aBuffer = Buffer.from(a);
-  const bBuffer = Buffer.from(b);
+  const encoder = new TextEncoder();
+
+  const aBuffer = encoder.encode(a);
+  const bBuffer = encoder.encode(b);
 
   if (aBuffer.length !== bBuffer.length) {
     return false;
@@ -44,7 +46,11 @@ function timingSafeCompare(a: string, b: string) {
   return crypto.timingSafeEqual(aBuffer, bBuffer);
 }
 
-function verifyStripeSignature(rawBody: string, signatureHeader: string, webhookSecret: string) {
+function verifyStripeSignature(
+  rawBody: string,
+  signatureHeader: string,
+  webhookSecret: string
+) {
   const parts = signatureHeader.split(",");
 
   const timestamp = parts
@@ -113,7 +119,7 @@ export async function POST(req: NextRequest) {
 
     const event = JSON.parse(rawBody);
 
-    if (event.type !== "charge.succeeded") {
+    if (!["charge.succeeded", "charge.failed"].includes(event.type)) {
       return Response.json({
         success: true,
         message: `Ignored event type: ${event.type}`,
@@ -123,7 +129,7 @@ export async function POST(req: NextRequest) {
     const charge = event.data.object;
 
     const amount =
-      typeof charge.amount_captured === "number"
+      typeof charge.amount_captured === "number" && charge.amount_captured > 0
         ? charge.amount_captured
         : charge.amount;
 
@@ -135,37 +141,31 @@ export async function POST(req: NextRequest) {
     );
     const customerPhone = clean(charge.billing_details?.phone || "N/A");
 
-    const paymentMethodType = clean(charge.payment_method_details?.type || "N/A");
-    const cardBrand = clean(charge.payment_method_details?.card?.brand || "");
-    const cardLast4 = clean(charge.payment_method_details?.card?.last4 || "");
+    const isFailed = event.type === "charge.failed";
 
-    const description = clean(charge.description || "N/A", 250);
-    const receiptUrl = charge.receipt_url || "";
-    const paymentIntent = charge.payment_intent || "N/A";
+    const declineReason =
+      charge.failure_message ||
+      charge.outcome?.seller_message ||
+      charge.outcome?.reason ||
+      "Payment failed";
 
-    const metadataLines = charge.metadata
-      ? Object.entries(charge.metadata)
-          .map(([key, value]) => `• ${clean(key, 50)}: ${clean(value, 100)}`)
-          .join("\n")
-      : "";
-
-    const message = `💸 STRIPE PAYMENT RECEIVED
+    const message = isFailed
+      ? `❌ STRIPE PAYMENT DECLINED
 
 💰 Amount: ${formatAmount(amount, currency)}
 👤 Name: ${customerName}
 📧 Email: ${customerEmail}
 📱 Phone: ${customerPhone}
+🕘 Time: ${formatMelbourneDateTimeFromUnix(charge.created)}
 
-💳 Payment Method: ${paymentMethodType}${
-      cardBrand || cardLast4 ? ` - ${cardBrand.toUpperCase()} ${cardLast4 ? `•••• ${cardLast4}` : ""}` : ""
-    }
-🧾 Description: ${description}
-🕘 Paid At: ${formatMelbourneDateTimeFromUnix(charge.created)}
+Reason: ${clean(declineReason, 250)}`
+      : `💸 STRIPE PAYMENT RECEIVED
 
-🔗 Payment Intent: ${clean(paymentIntent, 120)}
-${receiptUrl ? `🧾 Receipt: ${receiptUrl}` : ""}
-
-${metadataLines ? `📌 Metadata:\n${metadataLines}` : ""}`;
+💰 Amount: ${formatAmount(amount, currency)}
+👤 Name: ${customerName}
+📧 Email: ${customerEmail}
+📱 Phone: ${customerPhone}
+🕘 Time: ${formatMelbourneDateTimeFromUnix(charge.created)}`;
 
     const discordRes = await fetch(discordWebhookUrl, {
       method: "POST",
@@ -192,7 +192,9 @@ ${metadataLines ? `📌 Metadata:\n${metadataLines}` : ""}`;
 
     return Response.json({
       success: true,
-      message: "Stripe payment notification sent.",
+      message: isFailed
+        ? "Stripe declined payment notification sent."
+        : "Stripe successful payment notification sent.",
     });
   } catch (error) {
     console.error("Stripe webhook failed:", error);
