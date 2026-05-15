@@ -1,0 +1,205 @@
+import { NextRequest } from "next/server";
+import crypto from "crypto";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function clean(value: unknown, maxLength = 160) {
+  return String(value || "")
+    .trim()
+    .replaceAll("@everyone", "[everyone]")
+    .replaceAll("@here", "[here]")
+    .slice(0, maxLength);
+}
+
+function formatAmount(amount: number, currency: string) {
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(amount / 100);
+}
+
+function formatMelbourneDateTimeFromUnix(unixSeconds: number) {
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Melbourne",
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(new Date(unixSeconds * 1000));
+}
+
+function timingSafeCompare(a: string, b: string) {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
+
+  if (aBuffer.length !== bBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(aBuffer, bBuffer);
+}
+
+function verifyStripeSignature(rawBody: string, signatureHeader: string, webhookSecret: string) {
+  const parts = signatureHeader.split(",");
+
+  const timestamp = parts
+    .find((part) => part.startsWith("t="))
+    ?.replace("t=", "");
+
+  const signatures = parts
+    .filter((part) => part.startsWith("v1="))
+    .map((part) => part.replace("v1=", ""));
+
+  if (!timestamp || !signatures.length) {
+    return false;
+  }
+
+  const signedPayload = `${timestamp}.${rawBody}`;
+
+  const expectedSignature = crypto
+    .createHmac("sha256", webhookSecret)
+    .update(signedPayload)
+    .digest("hex");
+
+  return signatures.some((signature) =>
+    timingSafeCompare(signature, expectedSignature)
+  );
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+
+    if (!webhookSecret || !discordWebhookUrl) {
+      console.error("Missing STRIPE_WEBHOOK_SECRET or DISCORD_WEBHOOK_URL");
+
+      return Response.json(
+        { success: false, error: "Server configuration error." },
+        { status: 500 }
+      );
+    }
+
+    const signatureHeader = req.headers.get("stripe-signature");
+
+    if (!signatureHeader) {
+      return Response.json(
+        { success: false, error: "Missing Stripe signature." },
+        { status: 400 }
+      );
+    }
+
+    const rawBody = await req.text();
+
+    const validSignature = verifyStripeSignature(
+      rawBody,
+      signatureHeader,
+      webhookSecret
+    );
+
+    if (!validSignature) {
+      console.error("Invalid Stripe webhook signature.");
+
+      return Response.json(
+        { success: false, error: "Invalid signature." },
+        { status: 400 }
+      );
+    }
+
+    const event = JSON.parse(rawBody);
+
+    if (event.type !== "charge.succeeded") {
+      return Response.json({
+        success: true,
+        message: `Ignored event type: ${event.type}`,
+      });
+    }
+
+    const charge = event.data.object;
+
+    const amount =
+      typeof charge.amount_captured === "number"
+        ? charge.amount_captured
+        : charge.amount;
+
+    const currency = charge.currency || "aud";
+
+    const customerName = clean(charge.billing_details?.name || "N/A");
+    const customerEmail = clean(
+      charge.billing_details?.email || charge.receipt_email || "N/A"
+    );
+    const customerPhone = clean(charge.billing_details?.phone || "N/A");
+
+    const paymentMethodType = clean(charge.payment_method_details?.type || "N/A");
+    const cardBrand = clean(charge.payment_method_details?.card?.brand || "");
+    const cardLast4 = clean(charge.payment_method_details?.card?.last4 || "");
+
+    const description = clean(charge.description || "N/A", 250);
+    const receiptUrl = charge.receipt_url || "";
+    const paymentIntent = charge.payment_intent || "N/A";
+
+    const metadataLines = charge.metadata
+      ? Object.entries(charge.metadata)
+          .map(([key, value]) => `• ${clean(key, 50)}: ${clean(value, 100)}`)
+          .join("\n")
+      : "";
+
+    const message = `💸 STRIPE PAYMENT RECEIVED
+
+💰 Amount: ${formatAmount(amount, currency)}
+👤 Name: ${customerName}
+📧 Email: ${customerEmail}
+📱 Phone: ${customerPhone}
+
+💳 Payment Method: ${paymentMethodType}${
+      cardBrand || cardLast4 ? ` - ${cardBrand.toUpperCase()} ${cardLast4 ? `•••• ${cardLast4}` : ""}` : ""
+    }
+🧾 Description: ${description}
+🕘 Paid At: ${formatMelbourneDateTimeFromUnix(charge.created)}
+
+🔗 Payment Intent: ${clean(paymentIntent, 120)}
+${receiptUrl ? `🧾 Receipt: ${receiptUrl}` : ""}
+
+${metadataLines ? `📌 Metadata:\n${metadataLines}` : ""}`;
+
+    const discordRes = await fetch(discordWebhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: message,
+        allowed_mentions: {
+          parse: [],
+        },
+      }),
+    });
+
+    if (!discordRes.ok) {
+      const text = await discordRes.text();
+      console.error("Failed to send Stripe Discord notification:", text);
+
+      return Response.json(
+        { success: false, error: "Failed to send Discord notification." },
+        { status: 500 }
+      );
+    }
+
+    return Response.json({
+      success: true,
+      message: "Stripe payment notification sent.",
+    });
+  } catch (error) {
+    console.error("Stripe webhook failed:", error);
+
+    return Response.json(
+      { success: false, error: "Server error." },
+      { status: 500 }
+    );
+  }
+}
