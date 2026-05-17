@@ -4,6 +4,23 @@ import { Section } from "@/components/ui";
 import { useState, useEffect } from "react";
 import { track, trackMeta, trackMetaCustom } from "@/lib/track";
 
+const stateOptions = [
+  "Victoria",
+  "New South Wales",
+  "Queensland",
+  "South Australia",
+  "Northern Territory",
+  "Western Australia",
+  "Tasmania",
+  "Australian Capital Territory",
+];
+
+const blockedStates = [
+  "Western Australia",
+  "Tasmania",
+  "Australian Capital Territory",
+];
+
 function CalendlyEmbed() {
   useEffect(() => {
     const script = document.createElement("script");
@@ -85,6 +102,7 @@ export function Apply() {
     name: "",
     email: "",
     phone: "",
+    state: "",
     capital: "",
     ready_to_start: "",
     referrer: ""
@@ -102,25 +120,41 @@ useEffect(() => {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!capital || !timeline) {
+    if (!formData.state || !capital || !timeline) {
       trackMetaCustom("ApplicationSubmitAttemptIncomplete");
       alert("Please complete all fields");
       return;
     }
 
     trackMetaCustom("ApplicationSubmitted", {
+      state: formData.state,
       capital,
       ready_to_start: timeline,
       referrer: referrer || "Unassigned"
     });
     track("application_submitted", {
+      state: formData.state,
       capital,
       ready_to_start: timeline,
       referrer: referrer || "Unassigned"
     });
 
+    if (blockedStates.includes(formData.state)) {
+      trackMetaCustom("ApplicationRejected", {
+        reason: "blocked_state",
+        state: formData.state,
+        capital,
+        ready_to_start: timeline,
+        referrer: referrer || "Unassigned"
+      });
+      setStep("rejected");
+      return;
+    }
+
     if (capital === "<10k") {
       trackMetaCustom("ApplicationRejected", {
+        reason: "capital_under_10k",
+        state: formData.state,
         capital,
         ready_to_start: timeline,
         referrer: referrer || "Unassigned"
@@ -166,7 +200,7 @@ useEffect(() => {
           </h2>
 
           <p className="mt-4 text-white/70 leading-[1.7]">
-            Right now, we only work with people who have at least $10k ready to deploy.
+            Right now, we only work with people who have at least $10k ready to deploy and are not based in WA, Tasmania or ACT.
           </p>
         </div>
       </Section>
@@ -227,6 +261,25 @@ useEffect(() => {
           }
           className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
         />
+
+        <select
+          required
+          value={formData.state}
+          onChange={(e) =>
+            setFormData({ ...formData, state: e.target.value })
+          }
+          className="rounded-[12px] border border-white/10 bg-white/5 px-4 py-3 text-white"
+        >
+          <option value="" className="bg-[#0b0d10] text-white">
+            Select your state
+          </option>
+
+          {stateOptions.map((state) => (
+            <option key={state} value={state} className="bg-[#0b0d10] text-white">
+              {state}
+            </option>
+          ))}
+        </select>
 
         <div className="mt-2">
           <div className="text-white/60 text-sm mb-2">Capital ready</div>
