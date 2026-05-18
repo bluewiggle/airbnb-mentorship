@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     const updateRes = await fetch(
-      `${supabaseUrl}/rest/v1/Supabase?email=eq.${encodeURIComponent(
+      `${supabaseUrl}/rest/v1/applications?email=eq.${encodeURIComponent(
         booking.email
       )}&order=created_at.desc&limit=1`,
       {

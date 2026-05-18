@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const insertRes = await fetch(`${supabaseUrl}/rest/v1/Supabase`, {
+    const insertRes = await fetch(`${supabaseUrl}/rest/v1/applications`, {
       method: "POST",
       headers: {
         apikey: serviceRoleKey,
