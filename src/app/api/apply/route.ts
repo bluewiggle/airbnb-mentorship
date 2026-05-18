@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 function clean(value: unknown, maxLength: number) {
   return String(value || "").trim().slice(0, maxLength);
@@ -26,11 +28,14 @@ export async function POST(req: Request) {
 
     const payload = {
       name: clean(body.name, 80),
-      email: clean(body.email, 120),
-      phone: clean(body.phone, 30),
-      instagram: clean(body.instagram, 40),
-      capital: clean(body.capital, 40),
-      ready_to_start: clean(body.ready_to_start, 40),
+      email: clean(body.email, 120).toLowerCase(),
+      phone: clean(body.phone, 40),
+      instagram: clean(body.instagram, 60),
+      state: clean(body.state, 80),
+      capital: clean(body.capital, 60),
+      ready_to_start: clean(body.ready_to_start, 60),
+      referrer: clean(body.referrer, 80) || "Unassigned",
+      status: "application_submitted",
     };
 
     if (!payload.name || !payload.email || !payload.phone) {
@@ -49,10 +54,9 @@ export async function POST(req: Request) {
 
     const supabaseUrl = process.env.SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;
 
-    if (!supabaseUrl || !serviceRoleKey || !adminEmail) {
-      console.error("Missing required environment variables.");
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
 
       return NextResponse.json(
         { ok: false, error: "Server configuration error." },
@@ -68,7 +72,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
-      body: JSON.stringify([payload]),
+      body: JSON.stringify(payload),
     });
 
     if (!insertRes.ok) {
@@ -76,28 +80,33 @@ export async function POST(req: Request) {
       console.error("Supabase insert failed:", text);
 
       return NextResponse.json(
-        { ok: false, error: "Something went wrong. Please try again." },
+        { ok: false, error: `Supabase insert failed: ${text}` },
         { status: 500 }
       );
     }
 
-    await resend.emails.send({
-      from: "BNB Lab <onboarding@resend.dev>",
-      to: adminEmail,
-      subject: "New BNB Lab application",
-      html: `
-        <h2>New application</h2>
-        <p><b>Name:</b> ${escapeHtml(payload.name)}</p>
-        <p><b>Email:</b> ${escapeHtml(payload.email)}</p>
-        <p><b>Phone:</b> ${escapeHtml(payload.phone)}</p>
-        <p><b>Instagram:</b> ${escapeHtml(payload.instagram)}</p>
-        <p><b>Capital:</b> ${escapeHtml(payload.capital)}</p>
-        <p><b>Ready to start:</b> ${escapeHtml(payload.ready_to_start)}</p>
-      `,
-    });
+    const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;
+
+    if (resend && adminEmail) {
+      await resend.emails.send({
+        from: "BNB Lab <onboarding@resend.dev>",
+        to: adminEmail,
+        subject: "New BNB Lab application",
+        html: `
+          <h2>New application</h2>
+          <p><b>Name:</b> ${escapeHtml(payload.name)}</p>
+          <p><b>Email:</b> ${escapeHtml(payload.email)}</p>
+          <p><b>Phone:</b> ${escapeHtml(payload.phone)}</p>
+          <p><b>State:</b> ${escapeHtml(payload.state)}</p>
+          <p><b>Capital:</b> ${escapeHtml(payload.capital)}</p>
+          <p><b>Ready to start:</b> ${escapeHtml(payload.ready_to_start)}</p>
+          <p><b>Assigned to:</b> ${escapeHtml(payload.referrer)}</p>
+        `,
+      });
+    }
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
+  } catch (e) {
     console.error("Application route failed:", e);
 
     return NextResponse.json(

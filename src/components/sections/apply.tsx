@@ -117,7 +117,7 @@ useEffect(() => {
   else setReferrer(null);
 }, []);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     if (!formData.state || !capital || !timeline) {
@@ -163,13 +163,35 @@ useEffect(() => {
       return;
     }
 
-    // ✅ attach referrer before saving
+    // ✅ attach all required data before saving
     const finalData = {
       ...formData,
-      referrer: referrer || "Unassigned"
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      phone: formData.phone.trim(),
+      state: formData.state,
+      capital: capital || formData.capital,
+      ready_to_start: timeline || formData.ready_to_start,
+      referrer: referrer || "Unassigned",
     };
 
     localStorage.setItem("lead_data", JSON.stringify(finalData));
+
+    const saveRes = await fetch("/api/apply", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(finalData),
+    });
+
+    if (!saveRes.ok) {
+      const errorData = await saveRes.json().catch(() => null);
+      console.error("Failed to save application:", errorData);
+
+      alert(errorData?.error || "Something went wrong. Please try again.");
+      return;
+    }
 
     trackMeta("Lead", {
       content_name: "BNB Lab Application",
