@@ -84,7 +84,7 @@ function CalendlyEmbed() {
       <div className="mt-10 max-w-[900px] mx-auto">
         <div
           className="calendly-inline-widget w-full"
-          data-url="https://calendly.com/bnblabaus/30min"
+          data-url="https://calendly.com/bnblabaus/application"
           style={{ minWidth: "320px", height: "1000px" }}
         />
       </div>
