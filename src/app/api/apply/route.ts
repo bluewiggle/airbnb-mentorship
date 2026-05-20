@@ -101,7 +101,7 @@ export async function POST(req: Request) {
         from: "BNB Lab <onboarding@resend.dev>",
         to: adminEmail,
         subject: "New BNB Lab application",
-        html: `
+        html: 
           <h2>New application</h2>
           <p><b>Name:</b> ${escapeHtml(payload.name)}</p>
           <p><b>Email:</b> ${escapeHtml(payload.email)}</p>
