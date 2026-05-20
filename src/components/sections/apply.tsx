@@ -2,7 +2,13 @@
 
 import { Section } from "@/components/ui";
 import { useState, useEffect } from "react";
-import { track, trackMeta, trackMetaCustom } from "@/lib/track";
+import {
+  getAttribution,
+  getAttributionReferrer,
+  track,
+  trackMeta,
+  trackMetaCustom,
+} from "@/lib/track";
 
 const stateOptions = [
   "Victoria",
@@ -29,10 +35,24 @@ function CalendlyEmbed() {
     document.body.appendChild(script);
 
     function handleCalendlyEvent(e: any) {
+      if (e.origin !== "https://calendly.com") return;
+
       if (e.data.event === "calendly.event_scheduled") {
-        trackMeta("Schedule", { source: "calendly" });
-        trackMetaCustom("CalendlyScheduled", { source: "calendly" });
-        track("calendly_scheduled", { source: "calendly" });
+        const attribution = getAttribution();
+
+        // Do NOT fire Meta's standard Schedule event here.
+        // Real Schedule should come from the Calendly webhook/server.
+        trackMetaCustom("CalendlyScheduledClient", {
+          source: "calendly",
+          ref: attribution?.ref || "unassigned",
+          referrer: attribution?.referrer || "Unassigned",
+        });
+
+        track("calendly_scheduled_client", {
+          source: "calendly",
+          ref: attribution?.ref || "unassigned",
+          referrer: attribution?.referrer || "Unassigned",
+        });
 
         const stored = localStorage.getItem("lead_data");
 
@@ -109,12 +129,7 @@ export function Apply() {
   });
 
 useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const ref = params.get("ref");
-
-  if (ref === "l") setReferrer("Liam");
-  else if (ref === "n") setReferrer("Noah");
-  else setReferrer(null);
+  setReferrer(getAttributionReferrer());
 }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -164,6 +179,8 @@ useEffect(() => {
     }
 
     // ✅ attach all required data before saving
+    const attribution = getAttribution();
+
     const finalData = {
       ...formData,
       name: formData.name.trim(),
@@ -172,7 +189,16 @@ useEffect(() => {
       state: formData.state,
       capital: capital || formData.capital,
       ready_to_start: timeline || formData.ready_to_start,
-      referrer: referrer || "Unassigned",
+      referrer: attribution?.referrer || referrer || "Unassigned",
+      attribution_ref: attribution?.ref || "",
+      attribution_pixel_id: attribution?.pixel_id || "",
+      fbclid: attribution?.fbclid || "",
+      utm_source: attribution?.utm_source || "",
+      utm_medium: attribution?.utm_medium || "",
+      utm_campaign: attribution?.utm_campaign || "",
+      utm_content: attribution?.utm_content || "",
+      utm_term: attribution?.utm_term || "",
+      landing_page: attribution?.landing_page || "",
     };
 
     localStorage.setItem("lead_data", JSON.stringify(finalData));

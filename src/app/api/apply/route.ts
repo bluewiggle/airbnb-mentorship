@@ -35,6 +35,15 @@ export async function POST(req: Request) {
       capital: clean(body.capital, 60),
       ready_to_start: clean(body.ready_to_start, 60),
       referrer: clean(body.referrer, 80) || "Unassigned",
+      attribution_ref: clean(body.attribution_ref, 20),
+      attribution_pixel_id: clean(body.attribution_pixel_id, 40),
+      fbclid: clean(body.fbclid, 200),
+      utm_source: clean(body.utm_source, 120),
+      utm_medium: clean(body.utm_medium, 120),
+      utm_campaign: clean(body.utm_campaign, 200),
+      utm_content: clean(body.utm_content, 200),
+      utm_term: clean(body.utm_term, 200),
+      landing_page: clean(body.landing_page, 500),
       status: "application_submitted",
     };
 
