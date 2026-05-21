@@ -91,6 +91,20 @@ export async function POST(req: NextRequest) {
 
     if (!updateRes.ok) {
       const text = await updateRes.text();
+
+      // Supabase/Postgres duplicate key error.
+      // This usually means Calendly sent the same booking webhook again,
+      // or the booking was already saved by another route.
+      if (text.includes('"code":"23505"') || text.includes("duplicate key")) {
+        console.warn("Calendly booking already saved. Ignoring duplicate webhook:", text);
+
+        return Response.json({
+          success: true,
+          duplicate: true,
+          message: "Calendly booking already saved.",
+        });
+      }
+
       console.error("Failed to update Supabase with Calendly booking:", text);
 
       return Response.json(
