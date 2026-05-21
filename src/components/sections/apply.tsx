@@ -68,6 +68,25 @@ function CalendlyEmbed() {
           calendly_invitee_uri: calendlyPayload.invitee?.uri || null,
         };
 
+        if (dataWithBookingTime.attribution_pixel_id && dataWithBookingTime.attribution_ref) {
+          fetch("/api/meta/schedule", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ...dataWithBookingTime,
+              schedule_event_id: `schedule_${dataWithBookingTime.email}_${
+                calendlyPayload.event?.uri || Date.now()
+              }`,
+            }),
+          }).catch((error) => {
+            console.error("Failed to send Schedule CAPI event:", error);
+          });
+        } else {
+          console.log("Skipping Schedule CAPI because no paid attribution exists.");
+        }
+
         fetch("/api/send-to-discord", {
           method: "POST",
           headers: {
@@ -180,7 +199,7 @@ useEffect(() => {
 
     // ✅ attach all required data before saving
     const attribution = getAttribution();
-    const leadEventId = `lead_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const leadEventId = `lead_${formData.email.trim().toLowerCase()}_${Date.now()}`;
 
     const finalData = {
       ...formData,
@@ -222,11 +241,12 @@ useEffect(() => {
     }
 
     trackMeta("Lead", {
+      event_id: finalData.meta_event_id,
       content_name: "BNB Lab Application",
       capital,
       ready_to_start: timeline,
       referrer: referrer || "Unassigned"
-    }, { eventID: leadEventId });
+    });
     trackMetaCustom("CalendlyOpened", {
       capital,
       ready_to_start: timeline,

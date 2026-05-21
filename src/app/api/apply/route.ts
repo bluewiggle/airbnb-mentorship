@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       utm_content: clean(body.utm_content, 200),
       utm_term: clean(body.utm_term, 200),
       landing_page: clean(body.landing_page, 500),
-      meta_event_id: clean(body.meta_event_id, 120),
+      meta_event_id: clean(body.meta_event_id, 160),
       status: "application_submitted",
     };
 
@@ -110,36 +110,34 @@ export async function POST(req: Request) {
       );
     }
 
-    if (payload.attribution_pixel_id) {
-      try {
-        await sendMetaCapiEvent({
-          pixelId: payload.attribution_pixel_id,
-          eventName: "Lead",
-          eventSourceUrl: payload.landing_page || "https://www.bnblab.com.au/",
-          email: payload.email,
-          phone: payload.phone,
-          firstName: payload.name.split(" ")[0],
-          eventId: payload.meta_event_id || `lead_${payload.email}_${Date.now()}`,
-          fbp: getCookie(req, "_fbp"),
-          fbc: getCookie(req, "_fbc"),
-          clientIpAddress: getClientIp(req),
-          clientUserAgent: req.headers.get("user-agent"),
-          customData: {
-            content_name: "BNB Lab Application",
-            referrer: payload.referrer,
-            attribution_ref: payload.attribution_ref,
-            capital: payload.capital,
-            ready_to_start: payload.ready_to_start,
-            utm_source: payload.utm_source,
-            utm_medium: payload.utm_medium,
-            utm_campaign: payload.utm_campaign,
-            utm_content: payload.utm_content,
-            utm_term: payload.utm_term,
-          },
-        });
-      } catch (error) {
-        console.error("Lead Meta CAPI error:", error);
-      }
+    if (payload.attribution_pixel_id && payload.attribution_ref) {
+      await sendMetaCapiEvent({
+        pixelId: payload.attribution_pixel_id,
+        eventName: "Lead",
+        eventSourceUrl: payload.landing_page || "https://www.bnblab.com.au/",
+        email: payload.email,
+        phone: payload.phone,
+        firstName: payload.name.split(" ")[0],
+        eventId: payload.meta_event_id || `lead_${payload.email}_${Date.now()}`,
+        fbp: getCookie(req, "_fbp"),
+        fbc: getCookie(req, "_fbc"),
+        clientIpAddress: getClientIp(req),
+        clientUserAgent: req.headers.get("user-agent"),
+        customData: {
+          content_name: "BNB Lab Application",
+          referrer: payload.referrer,
+          attribution_ref: payload.attribution_ref,
+          capital: payload.capital,
+          ready_to_start: payload.ready_to_start,
+          utm_source: payload.utm_source,
+          utm_medium: payload.utm_medium,
+          utm_campaign: payload.utm_campaign,
+          utm_content: payload.utm_content,
+          utm_term: payload.utm_term,
+        },
+      });
+    } else {
+      console.log("Lead CAPI skipped because no paid attribution exists.");
     }
 
     const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;

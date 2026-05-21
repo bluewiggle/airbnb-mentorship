@@ -102,34 +102,33 @@ export async function POST(req: NextRequest) {
     const updatedRows = await updateRes.json();
     const application = Array.isArray(updatedRows) ? updatedRows[0] : null;
 
-    if (application?.attribution_pixel_id) {
-      try {
-        await sendMetaCapiEvent({
-          pixelId: application.attribution_pixel_id,
-          eventName: "Schedule",
-          eventSourceUrl: application.landing_page || "https://www.bnblab.com.au/",
-          email: application.email || booking.email,
-          phone: application.phone || booking.phone,
-          firstName:
-            application.name?.split(" ")?.[0] || booking.name?.split(" ")?.[0],
-          eventId: `schedule_${application.id || booking.email}_${booking.starts_at}`,
-          fbp: getCookie(req, "_fbp"),
-          fbc: getCookie(req, "_fbc"),
-          clientIpAddress: getClientIp(req),
-          clientUserAgent: req.headers.get("user-agent"),
-          customData: {
-            referrer: application.referrer,
-            attribution_ref: application.attribution_ref,
-            starts_at: booking.starts_at,
-            calendly_event_uri: booking.calendly_event_uri,
-            calendly_invitee_uri: booking.calendly_invitee_uri,
-          },
-        });
-      } catch (error) {
-        console.error("Schedule Meta CAPI error:", error);
-      }
+    if (application?.attribution_pixel_id && application?.attribution_ref) {
+      await sendMetaCapiEvent({
+        pixelId: application.attribution_pixel_id,
+        eventName: "Schedule",
+        eventSourceUrl: application.landing_page || "https://www.bnblab.com.au/",
+        email: application.email || booking.email,
+        phone: application.phone || booking.phone,
+        firstName: application.name?.split(" ")?.[0] || booking.name?.split(" ")?.[0],
+        eventId: `schedule_${booking.email}_${booking.calendly_event_uri || booking.starts_at}`,
+        fbp: getCookie(req, "_fbp"),
+        fbc: getCookie(req, "_fbc"),
+        clientIpAddress: getClientIp(req),
+        clientUserAgent: req.headers.get("user-agent"),
+        customData: {
+          content_name: "BNB Lab Booked Call",
+          referrer: application.referrer,
+          attribution_ref: application.attribution_ref,
+          starts_at: booking.starts_at,
+          calendly_event_uri: booking.calendly_event_uri,
+          calendly_invitee_uri: booking.calendly_invitee_uri,
+        },
+      });
     } else {
-      console.warn("Schedule Meta CAPI skipped: application attribution_pixel_id missing.");
+      console.log("Calendly Schedule CAPI skipped because no paid attribution exists or no matching application row was found.", {
+        email: booking.email,
+        hasApplication: Boolean(application),
+      });
     }
 
     return Response.json({ success: true });

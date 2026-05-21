@@ -7,6 +7,7 @@ type MetaEventInput = {
   email?: string;
   phone?: string;
   firstName?: string;
+  lastName?: string;
   eventId?: string;
   fbp?: string | null;
   fbc?: string | null;
@@ -15,10 +16,7 @@ type MetaEventInput = {
   customData?: Record<string, any>;
 };
 
-const NOAH_PIXEL_ID = "1788895448752082";
-const LIAM_PIXEL_ID = "2097284224148333";
-
-function hash(value?: string) {
+function hash(value?: string | null) {
   if (!value) return undefined;
 
   return crypto
@@ -27,24 +25,21 @@ function hash(value?: string) {
     .digest("hex");
 }
 
-function cleanPhone(value?: string) {
+function cleanPhone(value?: string | null) {
   if (!value) return undefined;
   return value.replace(/[^\d]/g, "");
 }
 
-function removeUndefined<T extends Record<string, any>>(obj: T) {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([, value]) => value !== undefined && value !== null && value !== "")
-  );
-}
-
 function getAccessToken(pixelId: string) {
-  if (pixelId === NOAH_PIXEL_ID) {
-    return process.env.NOAH_META_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
+  const noahPixelId = "1788895448752082";
+  const liamPixelId = "2097284224148333";
+
+  if (pixelId === noahPixelId && process.env.NOAH_META_ACCESS_TOKEN) {
+    return process.env.NOAH_META_ACCESS_TOKEN;
   }
 
-  if (pixelId === LIAM_PIXEL_ID) {
-    return process.env.LIAM_META_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
+  if (pixelId === liamPixelId && process.env.LIAM_META_ACCESS_TOKEN) {
+    return process.env.LIAM_META_ACCESS_TOKEN;
   }
 
   return process.env.META_ACCESS_TOKEN;
@@ -57,6 +52,7 @@ export async function sendMetaCapiEvent({
   email,
   phone,
   firstName,
+  lastName,
   eventId,
   fbp,
   fbc,
@@ -68,16 +64,31 @@ export async function sendMetaCapiEvent({
   const testEventCode = process.env.META_TEST_EVENT_CODE;
 
   if (!accessToken) {
-    console.warn("Meta CAPI skipped: missing access token.");
-    return;
+    console.warn("Meta CAPI skipped: missing access token.", { pixelId, eventName });
+    return { ok: false, skipped: true, reason: "missing_access_token" };
   }
 
   if (!pixelId) {
-    console.warn("Meta CAPI skipped: missing pixel ID.");
-    return;
+    console.warn("Meta CAPI skipped: missing pixel ID.", { eventName });
+    return { ok: false, skipped: true, reason: "missing_pixel_id" };
   }
 
-  const payload: any = {
+  const userData: Record<string, any> = {
+    em: hash(email),
+    ph: hash(cleanPhone(phone)),
+    fn: hash(firstName),
+    ln: hash(lastName),
+    fbp: fbp || undefined,
+    fbc: fbc || undefined,
+    client_ip_address: clientIpAddress || undefined,
+    client_user_agent: clientUserAgent || undefined,
+  };
+
+  Object.keys(userData).forEach((key) => {
+    if (!userData[key]) delete userData[key];
+  });
+
+  const payload: Record<string, any> = {
     data: [
       {
         event_name: eventName,
@@ -85,16 +96,8 @@ export async function sendMetaCapiEvent({
         event_id: eventId,
         action_source: "website",
         event_source_url: eventSourceUrl || "https://www.bnblab.com.au/",
-        user_data: removeUndefined({
-          em: hash(email),
-          ph: hash(cleanPhone(phone)),
-          fn: hash(firstName),
-          fbp,
-          fbc,
-          client_ip_address: clientIpAddress,
-          client_user_agent: clientUserAgent,
-        }),
-        custom_data: removeUndefined(customData),
+        user_data: userData,
+        custom_data: customData,
       },
     ],
   };
@@ -117,9 +120,10 @@ export async function sendMetaCapiEvent({
   const text = await res.text();
 
   if (!res.ok) {
-    console.error("Meta CAPI failed:", eventName, pixelId, text);
-    return;
+    console.error("Meta CAPI failed:", { pixelId, eventName, status: res.status, text });
+    return { ok: false, status: res.status, text };
   }
 
-  console.log("Meta CAPI sent:", eventName, pixelId, text);
+  console.log(`Meta CAPI sent: ${eventName} ${pixelId}`, text);
+  return { ok: true, status: res.status, text };
 }

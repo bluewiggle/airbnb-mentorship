@@ -1,9 +1,5 @@
 type EventParams = Record<string, string | number | boolean | null | undefined>;
 
-type MetaOptions = {
-  eventID?: string;
-};
-
 declare global {
   interface Window {
     gtag?: (...args: any[]) => void;
@@ -108,15 +104,17 @@ export function track(eventName: string, params: EventParams = {}) {
   }
 }
 
-export function trackMeta(
-  eventName: string,
-  params: EventParams = {},
-  options: MetaOptions = {}
-) {
+export function trackMeta(eventName: string, params: EventParams = {}) {
   if (typeof window === "undefined") return;
 
   const attribution = getAttribution();
   const cleaned = cleanParams(params);
+  const eventId =
+    typeof cleaned.event_id === "string"
+      ? cleaned.event_id
+      : typeof cleaned.meta_event_id === "string"
+        ? cleaned.meta_event_id
+        : undefined;
 
   console.log("Tracking Meta standard event:", eventName, cleaned);
 
@@ -126,7 +124,14 @@ export function trackMeta(
   }
 
   if (typeof window.fbq === "function") {
-    window.fbq("trackSingle", attribution.pixel_id, eventName, cleaned, options);
+    if (eventId) {
+      window.fbq("trackSingle", attribution.pixel_id, eventName, cleaned, {
+        eventID: eventId,
+      });
+      return;
+    }
+
+    window.fbq("trackSingle", attribution.pixel_id, eventName, cleaned);
   }
 }
 
