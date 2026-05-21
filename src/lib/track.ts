@@ -65,7 +65,7 @@ export function getAttributionReferrer() {
   return attribution?.referrer || "Unassigned";
 }
 
-function cleanParams(params: EventParams = {}) {
+function cleanParams(params: EventParams = {}): EventParams {
   const attribution = getAttribution();
 
   return {
