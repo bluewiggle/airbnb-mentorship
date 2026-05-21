@@ -180,6 +180,7 @@ useEffect(() => {
 
     // ✅ attach all required data before saving
     const attribution = getAttribution();
+    const leadEventId = `lead_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     const finalData = {
       ...formData,
@@ -199,6 +200,7 @@ useEffect(() => {
       utm_content: attribution?.utm_content || "",
       utm_term: attribution?.utm_term || "",
       landing_page: attribution?.landing_page || "",
+      meta_event_id: leadEventId,
     };
 
     localStorage.setItem("lead_data", JSON.stringify(finalData));
@@ -224,7 +226,7 @@ useEffect(() => {
       capital,
       ready_to_start: timeline,
       referrer: referrer || "Unassigned"
-    });
+    }, { eventID: leadEventId });
     trackMetaCustom("CalendlyOpened", {
       capital,
       ready_to_start: timeline,

@@ -1,7 +1,22 @@
 import { NextRequest } from "next/server";
+import { sendMetaCapiEvent } from "@/lib/meta-capi";
 
 function clean(value: unknown, maxLength = 120) {
   return String(value || "").trim().slice(0, maxLength);
+}
+
+function getClientIp(req: NextRequest) {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    null
+  );
+}
+
+function getCookie(req: NextRequest, name: string) {
+  const cookie = req.headers.get("cookie") || "";
+  const match = cookie.match(new RegExp(`(?:^|; )${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -32,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     const booking = {
       name: clean(payload?.name, 80),
-      email: clean(payload?.email, 120),
+      email: clean(payload?.email, 120).toLowerCase(),
       phone: clean(
         payload?.questions_and_answers?.find((q: any) =>
           String(q.question || "").toLowerCase().includes("phone")
@@ -63,12 +78,13 @@ export async function POST(req: NextRequest) {
           apikey: serviceRoleKey,
           Authorization: `Bearer ${serviceRoleKey}`,
           "Content-Type": "application/json",
-          Prefer: "return=minimal",
+          Prefer: "return=representation",
         },
         body: JSON.stringify({
           starts_at: booking.starts_at,
           calendly_event_uri: booking.calendly_event_uri,
           calendly_invitee_uri: booking.calendly_invitee_uri,
+          status: "call_booked",
         }),
       }
     );
@@ -81,6 +97,39 @@ export async function POST(req: NextRequest) {
         { success: false, error: "Failed to save Calendly booking." },
         { status: 500 }
       );
+    }
+
+    const updatedRows = await updateRes.json();
+    const application = Array.isArray(updatedRows) ? updatedRows[0] : null;
+
+    if (application?.attribution_pixel_id) {
+      try {
+        await sendMetaCapiEvent({
+          pixelId: application.attribution_pixel_id,
+          eventName: "Schedule",
+          eventSourceUrl: application.landing_page || "https://www.bnblab.com.au/",
+          email: application.email || booking.email,
+          phone: application.phone || booking.phone,
+          firstName:
+            application.name?.split(" ")?.[0] || booking.name?.split(" ")?.[0],
+          eventId: `schedule_${application.id || booking.email}_${booking.starts_at}`,
+          fbp: getCookie(req, "_fbp"),
+          fbc: getCookie(req, "_fbc"),
+          clientIpAddress: getClientIp(req),
+          clientUserAgent: req.headers.get("user-agent"),
+          customData: {
+            referrer: application.referrer,
+            attribution_ref: application.attribution_ref,
+            starts_at: booking.starts_at,
+            calendly_event_uri: booking.calendly_event_uri,
+            calendly_invitee_uri: booking.calendly_invitee_uri,
+          },
+        });
+      } catch (error) {
+        console.error("Schedule Meta CAPI error:", error);
+      }
+    } else {
+      console.warn("Schedule Meta CAPI skipped: application attribution_pixel_id missing.");
     }
 
     return Response.json({ success: true });
