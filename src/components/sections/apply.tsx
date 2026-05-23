@@ -136,6 +136,7 @@ export function Apply() {
   const [step, setStep] = useState<"form" | "rejected" | "booking">("form");
   const [capital, setCapital] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -154,11 +155,15 @@ useEffect(() => {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
     if (!formData.state || !capital || !timeline) {
       trackMetaCustom("ApplicationSubmitAttemptIncomplete");
       alert("Please complete all fields");
       return;
     }
+
+    setIsSubmitting(true);
 
     trackMetaCustom("ApplicationSubmitted", {
       state: formData.state,
@@ -181,6 +186,9 @@ useEffect(() => {
         ready_to_start: timeline,
         referrer: referrer || "Unassigned"
       });
+
+      setIsSubmitting(false);
+
       setStep("rejected");
       return;
     }
@@ -193,6 +201,7 @@ useEffect(() => {
         ready_to_start: timeline,
         referrer: referrer || "Unassigned"
       });
+      setIsSubmitting(false);
       setStep("rejected");
       return;
     }
@@ -236,6 +245,7 @@ useEffect(() => {
       const errorData = await saveRes.json().catch(() => null);
       console.error("Failed to save application:", errorData);
 
+      setIsSubmitting(false);
       alert(errorData?.error || "Something went wrong. Please try again.");
       return;
     }
@@ -408,12 +418,19 @@ useEffect(() => {
 
         <button
           type="submit"
+          disabled={isSubmitting}
           onClick={() => {
-            trackMetaCustom("ContinueClicked", { location: "apply_form" });
+            if (!isSubmitting) {
+              trackMetaCustom("ContinueClicked", { location: "apply_form" });
+            }
           }}
-          className="mt-6 rounded-full bg-accent px-6 py-3 font-extrabold text-black"
+          className={`mt-6 rounded-full px-6 py-3 font-extrabold text-black transition-all ${
+            isSubmitting
+              ? "cursor-not-allowed bg-accent/70 opacity-80"
+              : "bg-accent hover:scale-[1.01]"
+          }`}
         >
-          Continue
+          {isSubmitting ? "Loading..." : "Continue"}
         </button>
       </form>
     </Section>
