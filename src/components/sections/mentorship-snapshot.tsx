@@ -39,11 +39,11 @@ export function MentorshipSnapshot() {
         </h2>
       </div>
 
-      <div className="mx-auto mt-12 max-w-[900px] flex flex-col gap-5">
+      <div className="mx-auto mt-7 max-w-[900px] flex flex-col gap-4">
         {ITEMS.map((item, i) => (
           <div
             key={i}
-            className="flex items-start gap-5 rounded-[20px] border border-white/10 bg-white/5 p-6 transition hover:bg-white/7"
+            className="flex items-start gap-4 rounded-[20px] border border-white/10 bg-white/5 p-5 transition hover:bg-white/7"
           >
             {/* ICON */}
             <div className="flex-shrink-0 rounded-[14px] border border-white/10 bg-white/5 p-2">

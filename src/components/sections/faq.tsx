@@ -43,12 +43,12 @@ export function FAQ() {
           <span className="h-px w-14 bg-white/18" />
         </div>
 
-        <h2 className="mt-6 text-[clamp(34px,4.5vw,46px)] font-extrabold tracking-[-0.03em] text-white/95">
+        <h2 className="mt-4 text-[clamp(34px,4.5vw,46px)] font-extrabold tracking-[-0.03em] text-white/95">
           Frequently Asked Questions
         </h2>
       </div>
 
-      <div className="mx-auto mt-10 max-w-[980px] space-y-3">
+      <div className="mx-auto mt-7 max-w-[980px] space-y-3">
         {FAQS.map((f, i) => {
           const isOpen = open === i;
 

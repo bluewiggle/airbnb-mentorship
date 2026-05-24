@@ -13,7 +13,7 @@ function Founder({
   img: string;
 }) {
   return (
-    <div className={"grid gap-8 lg:grid-cols-2 lg:gap-12 " + (reverse ? "lg:[&>*:first-child]:order-2" : "")}>
+    <div className={"grid gap-6 lg:grid-cols-2 lg:gap-9 " + (reverse ? "lg:[&>*:first-child]:order-2" : "")}>
       <div className="relative overflow-hidden rounded-[28px] border border-white/12 shadow-[0_40px_110px_rgba(0,0,0,0.45)]">
         <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/75" />
         <div
@@ -50,16 +50,16 @@ export function Operators() {
           <span className="h-px w-14 bg-white/18" />
         </div>
 
-        <h2 className="mt-6 text-[clamp(44px,6vw,76px)] font-extrabold tracking-[-0.05em] leading-[1.00] text-white/95">
+        <h2 className="mt-4 text-[clamp(44px,6vw,76px)] font-extrabold tracking-[-0.05em] leading-[1.00] text-white/95">
           Built by people actually doing it
         </h2>
 
-        <p className="mx-auto mt-5 max-w-[880px] text-[16.5px] leading-[1.8] text-white/72">
+        <p className="mx-auto mt-4 max-w-[880px] text-[16.5px] leading-[1.7] text-white/72">
           At 21 years old, we built a 15-property Airbnb portfolio across Melbourne in under 12 months. We made the mistakes and figured out what actually works. We started BNBLAB to give others the system we wish we had from day one.
         </p>
       </div>
 
-      <div className="mt-14 flex flex-col gap-14">
+      <div className="mt-9 flex flex-col gap-10">
         <Founder
           name="Noah"
           body="Hi, my name is Noah. I specialise in handling the day to day operations. This includes cleaning coordination, guest communications, furnishing rollout and automating the workflows that keep everything running systematically."

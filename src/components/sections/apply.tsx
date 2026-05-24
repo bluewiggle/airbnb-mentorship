@@ -329,18 +329,18 @@ useEffect(() => {
   return (
     <Section id="apply">
       <div className="text-center">
-        <h2 className="mt-6 text-[clamp(34px,4.5vw,48px)] font-extrabold text-white">
+        <h2 className="mt-4 text-[clamp(34px,4.5vw,48px)] font-extrabold text-white">
           See if you qualify
         </h2>
 
-        <p className="mx-auto mt-4 max-w-[640px] text-[15px] text-white/70">
+        <p className="mx-auto mt-3 max-w-[640px] text-[15px] text-white/70">
           Takes 60 seconds. If you’re a fit, you’ll book a call instantly.
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="mx-auto mt-10 max-w-[600px] flex flex-col gap-4"
+        className="mx-auto mt-7 max-w-[600px] flex flex-col gap-3"
       >
         <input
           placeholder="Full name"

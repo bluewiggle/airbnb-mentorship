@@ -42,7 +42,7 @@ export function HowItWorks() {
   const pct = useMemo(() => (STEPS.length === 1 ? 0 : (active / (STEPS.length - 1)) * 100), [active]);
 
   return (
-    <Section id="how" className="pt-[120px] md:pt-[160px]">
+    <Section id="how" className="pt-[70px] md:pt-[90px]">
       <div className="text-center">
         <div className="inline-flex items-center gap-3 text-[12px] font-extrabold uppercase tracking-[0.26em] text-white/72">
           <span className="h-px w-14 bg-white/18" />
@@ -50,7 +50,7 @@ export function HowItWorks() {
           <span className="h-px w-14 bg-white/18" />
         </div>
 
-        <h2 className="mt-6 text-[clamp(44px,6vw,84px)] font-extrabold tracking-[-0.04em] leading-[1.02] text-white/95">
+        <h2 className="mt-4 text-[clamp(44px,6vw,84px)] font-extrabold tracking-[-0.04em] leading-[1.02] text-white/95">
           The exact sequence we used to scale to $1M+ in 1 year.
         </h2>
 
@@ -59,7 +59,7 @@ export function HowItWorks() {
         </p>
       </div>
 
-      <div className="mt-12 grid gap-5 lg:grid-cols-[420px_1fr]">
+      <div className="mt-8 grid gap-5 lg:grid-cols-[420px_1fr]">
         {/* Index */}
         <aside className="surface rounded-[28px] p-6 lg:sticky lg:top-[92px]">
           <div className="flex items-center justify-between gap-4">
