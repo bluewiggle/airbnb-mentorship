@@ -9,12 +9,12 @@ const FEATURED_IMAGES = [
   "/Success 4.jpg",
   "/Success 5.jpg",
   "/Success 6.jpg",
-  "/Success 8.jpg",
+  "/Success 7.jpg",
   
 ];
 
 const MORE_IMAGES = [
-  "/Success 7.jpg",
+  "/Success 8.jpg",
   "/Success 9.jpg",
   "/Success 10.jpg",
   "/Success 11.jpg",
