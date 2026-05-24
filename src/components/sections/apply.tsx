@@ -165,52 +165,10 @@ useEffect(() => {
 
     setIsSubmitting(true);
 
-    trackMetaCustom("ApplicationSubmitted", {
-      state: formData.state,
-      capital,
-      ready_to_start: timeline,
-      referrer: referrer || "Unassigned"
-    });
-    track("application_submitted", {
-      state: formData.state,
-      capital,
-      ready_to_start: timeline,
-      referrer: referrer || "Unassigned"
-    });
-
-    if (blockedStates.includes(formData.state)) {
-      trackMetaCustom("ApplicationRejected", {
-        reason: "blocked_state",
-        state: formData.state,
-        capital,
-        ready_to_start: timeline,
-        referrer: referrer || "Unassigned"
-      });
-
-      setIsSubmitting(false);
-
-      setStep("rejected");
-      return;
-    }
-
-    if (capital === "<10k") {
-      trackMetaCustom("ApplicationRejected", {
-        reason: "capital_under_10k",
-        state: formData.state,
-        capital,
-        ready_to_start: timeline,
-        referrer: referrer || "Unassigned"
-      });
-      setIsSubmitting(false);
-      setStep("rejected");
-      return;
-    }
-
-    // ✅ attach all required data before saving
     const attribution = getAttribution();
     const leadEventId = `lead_${formData.email.trim().toLowerCase()}_${Date.now()}`;
 
-    const finalData = {
+    const baseFinalData = {
       ...formData,
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
@@ -229,6 +187,79 @@ useEffect(() => {
       utm_term: attribution?.utm_term || "",
       landing_page: attribution?.landing_page || "",
       meta_event_id: leadEventId,
+    };
+
+    trackMetaCustom("ApplicationSubmitted", {
+      state: formData.state,
+      capital,
+      ready_to_start: timeline,
+      referrer: baseFinalData.referrer
+    });
+    track("application_submitted", {
+      state: formData.state,
+      capital,
+      ready_to_start: timeline,
+      referrer: baseFinalData.referrer
+    });
+
+    const rejectionReason = blockedStates.includes(formData.state)
+      ? "State not supported"
+      : capital === "<10k"
+        ? "Capital under $10k"
+        : null;
+
+    if (rejectionReason) {
+      const rejectedData = {
+        ...baseFinalData,
+        status: blockedStates.includes(formData.state)
+          ? "rejected_blocked_state"
+          : "rejected_capital_under_10k",
+        rejection_reason: rejectionReason,
+      };
+
+      trackMetaCustom("ApplicationRejected", {
+        reason: rejectedData.status,
+        state: formData.state,
+        capital,
+        ready_to_start: timeline,
+        referrer: rejectedData.referrer
+      });
+
+      const saveRes = await fetch("/api/apply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(rejectedData),
+      });
+
+      if (!saveRes.ok) {
+        const errorData = await saveRes.json().catch(() => null);
+        console.error("Failed to save rejected application:", errorData);
+
+        setIsSubmitting(false);
+        alert(errorData?.error || "Something went wrong. Please try again.");
+        return;
+      }
+
+      await fetch("/api/send-to-discord", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(rejectedData),
+      }).catch((error) => {
+        console.error("Failed to send rejected application to Discord:", error);
+      });
+
+      setIsSubmitting(false);
+      setStep("rejected");
+      return;
+    }
+
+    const finalData = {
+      ...baseFinalData,
+      status: "application_submitted",
     };
 
     localStorage.setItem("lead_data", JSON.stringify(finalData));

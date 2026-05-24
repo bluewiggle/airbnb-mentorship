@@ -81,20 +81,38 @@ export async function POST(req: Request) {
       phone: clean(data.phone, 40),
       capital: clean(data.capital, 60),
       ready_to_start: clean(data.ready_to_start, 60),
+      state: clean(data.state, 80),
       referrer: clean(data.referrer, 80),
+      status: clean(data.status, 80),
+      rejection_reason: clean(data.rejection_reason, 160),
       booking_time: clean(formattedBookingTime, 120),
     };
 
-    const message = `🔥 NEW BOOKED CALL
+    const isRejected =
+      payload.status.startsWith("rejected") || !!payload.rejection_reason;
 
-👤 Name: ${payload.name || "N/A"}
-📧 Email: ${payload.email || "N/A"}
-📱 Phone: ${payload.phone || "N/A"}
-💰 Capital: ${payload.capital || "N/A"}
-⏳ Ready: ${payload.ready_to_start || "N/A"}
-🕘 Booking Time: ${payload.booking_time || "N/A"}
+    const message = isRejected
+      ? `🚫 APPLICATION DENIED
 
-🎯 Assigned To: ${payload.referrer || "Unassigned"}`;
+    👤 Name: ${payload.name || "N/A"}
+    📧 Email: ${payload.email || "N/A"}
+    📱 Phone: ${payload.phone || "N/A"}
+    📍 State: ${payload.state || "N/A"}
+    💰 Capital: ${payload.capital || "N/A"}
+    ⏳ Ready: ${payload.ready_to_start || "N/A"}
+
+    ❌ Reason: ${payload.rejection_reason || payload.status || "N/A"}
+    🎯 Assigned To: ${payload.referrer || "Unassigned"}`
+      : `🔥 NEW BOOKED CALL
+
+    👤 Name: ${payload.name || "N/A"}
+    📧 Email: ${payload.email || "N/A"}
+    📱 Phone: ${payload.phone || "N/A"}
+    💰 Capital: ${payload.capital || "N/A"}
+    ⏳ Ready: ${payload.ready_to_start || "N/A"}
+    🕘 Booking Time: ${payload.booking_time || "N/A"}
+
+    🎯 Assigned To: ${payload.referrer || "Unassigned"}`;
 
     const discordRes = await fetch(webhookUrl, {
       method: "POST",

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       utm_term: clean(body.utm_term, 200),
       landing_page: clean(body.landing_page, 500),
       meta_event_id: clean(body.meta_event_id, 160),
-      status: "application_submitted",
+      status: clean(body.status, 80) || "application_submitted",
     };
 
     if (!payload.name || !payload.email || !payload.phone) {
