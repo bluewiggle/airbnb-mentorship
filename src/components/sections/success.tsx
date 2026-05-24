@@ -47,7 +47,6 @@ const MORE_IMAGES = [
   "/Success 38.jpg",
   "/Success 39.jpg",
   "/Success 40.jpg",
-  "/Success 41.jpg",
 ];
 
 function SuccessGrid({ images }: { images: string[] }) {
