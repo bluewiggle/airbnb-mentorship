@@ -106,7 +106,7 @@ export function MoreSuccess() {
         </h2>
 
         <p className="mt-4 text-white/70 text-[15px]">
-          More proof from students taking action inside the mentorship.
+          More proof from students succeeding from our blueprint.
         </p>
       </div>
 
