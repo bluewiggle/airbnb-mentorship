@@ -57,7 +57,7 @@ export function Hero({ onApplyClick }: Props) {
         </div>
 
         <div className="mt-5 text-[13px] font-semibold text-white/60">
-          The application is directly below. Only{" "}
+          Only{" "}
           <span className="text-white/85">{spotsLeft} spots</span> left this month.
         </div>
       </div>
