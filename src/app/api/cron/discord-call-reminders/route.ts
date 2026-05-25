@@ -21,6 +21,16 @@ type CalendlyInvitee = {
   }[];
 };
 
+type SupabaseApplication = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  capital?: string;
+  ready_to_start?: string;
+  referrer?: string;
+  starts_at?: string;
+};
+
 function clean(value: unknown, maxLength = 120) {
   return String(value || "")
     .trim()
@@ -132,6 +142,39 @@ function getAnswer(invitee: CalendlyInvitee, keyword: string) {
   )?.answer;
 }
 
+async function getSupabaseApplicationByEmail(email?: string) {
+  if (!email) return null;
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
+    return null;
+  }
+
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/applications?email=eq.${encodeURIComponent(
+      email.toLowerCase()
+    )}&order=created_at.desc&limit=1`,
+    {
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("Failed to fetch Supabase application:", text);
+    return null;
+  }
+
+  const rows = (await res.json()) as SupabaseApplication[];
+  return rows[0] || null;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -186,26 +229,39 @@ export async function GET(req: NextRequest) {
         const invitees = await getCalendlyInvitees(calendlyToken, event.uri);
         const invitee = invitees[0];
 
-        const name = invitee?.name || "Name missing";
-        const email = invitee?.email || "Email missing";
+        const calendlyEmail = invitee?.email || "";
+        const application = await getSupabaseApplicationByEmail(calendlyEmail);
+
+        const name = application?.name || invitee?.name || "Name missing";
+        const email = application?.email || invitee?.email || "Email missing";
+
         const phone =
+          application?.phone ||
           getAnswer(invitee || {}, "phone") ||
           invitee?.text_reminder_number ||
           "Phone missing";
 
-        const capital = getAnswer(invitee || {}, "capital") || "N/A";
+        const capital =
+          application?.capital ||
+          getAnswer(invitee || {}, "capital") ||
+          "N/A";
+
         const timeline =
+          application?.ready_to_start ||
           getAnswer(invitee || {}, "ready") ||
           getAnswer(invitee || {}, "start") ||
           "N/A";
 
+        const assignedTo = application?.referrer || "N/A";
+
         return `${index + 1}. ${time}
-📞 ${clean(event.name) || "Booked call"}
-👤 Name: ${clean(name)}
-📧 Email: ${clean(email)}
-📱 Phone: ${clean(phone)}
-💰 Capital: ${clean(capital)}
-⏳ Ready to start: ${clean(timeline)}`;
+        📞 ${clean(event.name) || "Booked call"}
+        👤 Name: ${clean(name)}
+        📧 Email: ${clean(email)}
+        📱 Phone: ${clean(phone)}
+        💰 Capital: ${clean(capital)}
+        ⏳ Ready to start: ${clean(timeline)}
+        🎯 Assigned to: ${clean(assignedTo)}`;
       })
     );
 
