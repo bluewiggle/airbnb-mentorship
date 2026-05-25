@@ -256,14 +256,25 @@ export async function GET(req: NextRequest) {
 
         const assignedTo = application?.referrer || "N/A";
 
-        return `${index + 1}. ${time}
-        📞 ${clean(event.name) || "Booked call"}
-        👤 Name: ${clean(name)}
-        📧 Email: ${clean(email)}
-        📱 Phone: ${clean(phone)}
-        💰 Capital: ${clean(capital)}
-        ⏳ Ready to start: ${clean(timeline)}
-        🎯 Assigned to: ${clean(assignedTo)}`;
+        const callType = clean(event.name) || "Booked call";
+        const isMentorshipApplication = callType
+          .toLowerCase()
+          .includes("mentorship application");
+
+        if (!isMentorshipApplication) {
+          return `**${index + 1}. ${time}**
+        📞 **${callType}**
+        👤 ${clean(name)}`;
+        }
+
+        return `**${index + 1}. ${time}**
+        📞 **${callType}**
+        👤 **Name:** ${clean(name)}
+        📧 **Email:** ${clean(email)}
+        📱 **Phone:** ${clean(phone)}
+        💰 **Capital:** ${clean(capital)}
+        ⏳ **Ready to start:** ${clean(timeline)}
+        🎯 **Assigned to:** ${clean(assignedTo)}`;
       })
     );
 
