@@ -191,10 +191,10 @@ export async function GET(req: NextRequest) {
 
     const forceRun = req.nextUrl.searchParams.get("force") === "true";
 
-    if (!forceRun && Number(melbourneHour) !== 21) {
+    if (!forceRun && ![18, 19].includes(Number(melbourneHour))) {
       return Response.json({
         success: true,
-        message: "Not 9pm Melbourne time. Skipping reminder.",
+        message: "Not 6pm or 7pm Melbourne time. Skipping reminder.",
       });
     }
 
