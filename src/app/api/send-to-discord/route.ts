@@ -54,10 +54,11 @@ async function getCalendlyBookingTime(eventUri: string | null | undefined) {
 
 export async function POST(req: Request) {
   try {
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    const callsWebhookUrl = process.env.DISCORD_CALLS_WEBHOOK_URL;
+    const deniedWebhookUrl = process.env.DISCORD_DENIED_WEBHOOK_URL;
 
-    if (!webhookUrl) {
-      console.error("Missing DISCORD_WEBHOOK_URL");
+    if (!callsWebhookUrl || !deniedWebhookUrl) {
+      console.error("Missing DISCORD_CALLS_WEBHOOK_URL or DISCORD_DENIED_WEBHOOK_URL");
 
       return Response.json(
         { success: false, error: "Server configuration error." },
@@ -108,13 +109,16 @@ export async function POST(req: Request) {
     👤 Name: ${payload.name || "N/A"}
     📧 Email: ${payload.email || "N/A"}
     📱 Phone: ${payload.phone || "N/A"}
+    📍 State: ${payload.state || "N/A"}
     💰 Capital: ${payload.capital || "N/A"}
     ⏳ Ready: ${payload.ready_to_start || "N/A"}
     🕘 Booking Time: ${payload.booking_time || "N/A"}
 
     🎯 Assigned To: ${payload.referrer || "Unassigned"}`;
 
-    const discordRes = await fetch(webhookUrl, {
+    const targetWebhookUrl = isRejected ? deniedWebhookUrl : callsWebhookUrl;
+
+    const discordRes = await fetch(targetWebhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

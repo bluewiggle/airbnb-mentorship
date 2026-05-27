@@ -199,10 +199,10 @@ export async function GET(req: NextRequest) {
     }
 
     const calendlyToken = process.env.CALENDLY_TOKEN;
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    const webhookUrl = process.env.DISCORD_CALLS_WEBHOOK_URL;
 
     if (!calendlyToken || !webhookUrl) {
-      console.error("Missing CALENDLY_TOKEN or DISCORD_WEBHOOK_URL");
+      console.error("Missing CALENDLY_TOKEN or DISCORD_CALLS_WEBHOOK_URL");
 
       return Response.json(
         { success: false, error: "Server configuration error." },

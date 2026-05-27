@@ -80,10 +80,10 @@ function verifyStripeSignature(
 export async function POST(req: NextRequest) {
   try {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    const discordWebhookUrl = process.env.DISCORD_STRIPE_WEBHOOK_URL;
 
     if (!webhookSecret || !discordWebhookUrl) {
-      console.error("Missing STRIPE_WEBHOOK_SECRET or DISCORD_WEBHOOK_URL");
+      console.error("Missing STRIPE_WEBHOOK_SECRET or DISCORD_STRIPE_WEBHOOK_URL");
 
       return Response.json(
         { success: false, error: "Server configuration error." },
