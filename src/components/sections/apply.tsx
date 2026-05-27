@@ -27,7 +27,17 @@ const blockedStates = [
   "Australian Capital Territory",
 ];
 
-function CalendlyEmbed() {
+function CalendlyEmbed({
+  leadData,
+}: {
+  leadData: {
+    name: string;
+    email: string;
+  };
+}) {
+  const calendlyUrl = `https://calendly.com/bnblabaus/application?name=${encodeURIComponent(
+    leadData.name
+  )}&email=${encodeURIComponent(leadData.email)}`;
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://assets.calendly.com/assets/external/widget.js";
@@ -123,7 +133,7 @@ function CalendlyEmbed() {
       <div className="mt-10 max-w-[900px] mx-auto">
         <div
           className="calendly-inline-widget w-full"
-          data-url="https://calendly.com/bnblabaus/application"
+          data-url={calendlyUrl}
           style={{ minWidth: "320px", height: "1000px" }}
         />
       </div>
@@ -137,6 +147,10 @@ export function Apply() {
   const [capital, setCapital] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [qualifiedLeadData, setQualifiedLeadData] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -264,6 +278,11 @@ useEffect(() => {
 
     localStorage.setItem("lead_data", JSON.stringify(finalData));
 
+    setQualifiedLeadData({
+      name: finalData.name,
+      email: finalData.email,
+    });
+
     const saveRes = await fetch("/api/apply", {
       method: "POST",
       headers: {
@@ -321,7 +340,7 @@ useEffect(() => {
   if (step === "booking") {
     return (
       <Section id="apply">
-        <CalendlyEmbed />
+        {qualifiedLeadData && <CalendlyEmbed leadData={qualifiedLeadData} />}
       </Section>
     );
   }
