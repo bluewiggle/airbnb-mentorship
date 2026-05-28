@@ -141,6 +141,7 @@ export async function POST(req: Request) {
     }
 
     const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;
+    const unbookedLeadsWebhookUrl = process.env.DISCORD_UNBOOKED_LEADS_WEBHOOK_URL;
 
     if (resend && adminEmail) {
       await resend.emails.send({
@@ -158,6 +159,38 @@ export async function POST(req: Request) {
           <p><b>Assigned to:</b> ${escapeHtml(payload.referrer)}</p>
         `,
       });
+    }
+
+    if (payload.status === "application_submitted" && unbookedLeadsWebhookUrl) {
+      try {
+        const discordRes = await fetch(unbookedLeadsWebhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content: `📝 NEW WEBSITE APPLICATION
+
+    👤 Name: ${payload.name || "N/A"}
+    📧 Email: ${payload.email || "N/A"}
+    📱 Phone: ${payload.phone || "N/A"}
+    📍 State: ${payload.state || "N/A"}
+    💰 Capital: ${payload.capital || "N/A"}
+    ⏳ Ready: ${payload.ready_to_start || "N/A"}
+
+    🎯 Assigned To: ${payload.referrer || "Unassigned"}
+
+    ⚠️ They filled the form but have not booked a call yet.`,
+          }),
+        });
+
+        if (!discordRes.ok) {
+          const text = await discordRes.text();
+          console.error("Unbooked lead Discord webhook failed:", text);
+        }
+      } catch (error) {
+        console.error("Failed to send unbooked lead to Discord:", error);
+      }
     }
 
     return NextResponse.json({ ok: true });
