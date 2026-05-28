@@ -1,22 +1,8 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
-
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
 
 function clean(value: unknown, maxLength: number) {
   return String(value || "").trim().slice(0, maxLength);
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 function isValidEmail(email: string) {
@@ -140,26 +126,7 @@ export async function POST(req: Request) {
       console.log("Lead CAPI skipped because no paid attribution exists.");
     }
 
-    const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;
     const unbookedLeadsWebhookUrl = process.env.DISCORD_UNBOOKED_LEADS_WEBHOOK_URL;
-
-    if (resend && adminEmail) {
-      await resend.emails.send({
-        from: "BNB Lab <onboarding@resend.dev>",
-        to: adminEmail,
-        subject: "New BNB Lab application",
-        html: `
-          <h2>New application</h2>
-          <p><b>Name:</b> ${escapeHtml(payload.name)}</p>
-          <p><b>Email:</b> ${escapeHtml(payload.email)}</p>
-          <p><b>Phone:</b> ${escapeHtml(payload.phone)}</p>
-          <p><b>State:</b> ${escapeHtml(payload.state)}</p>
-          <p><b>Capital:</b> ${escapeHtml(payload.capital)}</p>
-          <p><b>Ready to start:</b> ${escapeHtml(payload.ready_to_start)}</p>
-          <p><b>Assigned to:</b> ${escapeHtml(payload.referrer)}</p>
-        `,
-      });
-    }
 
     if (payload.status === "application_submitted" && unbookedLeadsWebhookUrl) {
       try {
