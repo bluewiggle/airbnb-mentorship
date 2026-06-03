@@ -15,6 +15,8 @@ export function SiteFooter() {
             <a href="#mentorship" className="hover:text-white/92">What you get</a>
             <a href="#faq" className="hover:text-white/92">FAQs</a>
             <a href="#apply" className="hover:text-white/92">Apply</a>
+            <a href="/privacy-policy" className="hover:text-white/92">Privacy Policy</a>
+            <a href="/terms-of-service" className="hover:text-white/92">Terms of Service</a>
           </div>
         </div>
 
