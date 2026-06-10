@@ -1,5 +1,14 @@
 import crypto from "crypto";
 
+const NOAH_PIXEL_ID = "1788895448752082";
+const LIAM_PIXEL_ID = "2097284224148333";
+
+const ALLOWED_PIXEL_IDS = new Set([NOAH_PIXEL_ID, LIAM_PIXEL_ID]);
+
+export function isAllowedMetaPixelId(pixelId?: string | null) {
+  return Boolean(pixelId && ALLOWED_PIXEL_IDS.has(pixelId));
+}
+
 type MetaEventInput = {
   pixelId: string;
   eventName: "Lead" | "Schedule";
@@ -31,18 +40,19 @@ function cleanPhone(value?: string | null) {
 }
 
 function getAccessToken(pixelId: string) {
-  const noahPixelId = "1788895448752082";
-  const liamPixelId = "2097284224148333";
-
-  if (pixelId === noahPixelId && process.env.NOAH_META_ACCESS_TOKEN) {
-    return process.env.NOAH_META_ACCESS_TOKEN;
+  if (!isAllowedMetaPixelId(pixelId)) {
+    return undefined;
   }
 
-  if (pixelId === liamPixelId && process.env.LIAM_META_ACCESS_TOKEN) {
-    return process.env.LIAM_META_ACCESS_TOKEN;
+  if (pixelId === NOAH_PIXEL_ID) {
+    return process.env.NOAH_META_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
   }
 
-  return process.env.META_ACCESS_TOKEN;
+  if (pixelId === LIAM_PIXEL_ID) {
+    return process.env.LIAM_META_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
+  }
+
+  return undefined;
 }
 
 export async function sendMetaCapiEvent({
@@ -60,17 +70,25 @@ export async function sendMetaCapiEvent({
   clientUserAgent,
   customData = {},
 }: MetaEventInput) {
+  if (!pixelId) {
+    console.warn("Meta CAPI skipped: missing pixel ID.", { eventName });
+    return { ok: false, skipped: true, reason: "missing_pixel_id" };
+  }
+
+  if (!isAllowedMetaPixelId(pixelId)) {
+    console.warn("Meta CAPI skipped: pixel ID is not allow-listed.", {
+      pixelId,
+      eventName,
+    });
+    return { ok: false, skipped: true, reason: "pixel_not_allowed" };
+  }
+
   const accessToken = getAccessToken(pixelId);
   const testEventCode = process.env.META_TEST_EVENT_CODE;
 
   if (!accessToken) {
     console.warn("Meta CAPI skipped: missing access token.", { pixelId, eventName });
     return { ok: false, skipped: true, reason: "missing_access_token" };
-  }
-
-  if (!pixelId) {
-    console.warn("Meta CAPI skipped: missing pixel ID.", { eventName });
-    return { ok: false, skipped: true, reason: "missing_pixel_id" };
   }
 
   const userData: Record<string, any> = {

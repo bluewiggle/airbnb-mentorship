@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendMetaCapiEvent } from "@/lib/meta-capi";
-
-function clean(value: unknown, maxLength = 300) {
-  return String(value || "").trim().slice(0, maxLength);
-}
+import { isAllowedMetaPixelId, sendMetaCapiEvent } from "@/lib/meta-capi";
+import { rateLimit } from "@/lib/rate-limit";
+import { clean, isInternalRequest } from "@/lib/security";
 
 function getClientIp(req: NextRequest) {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
-    null
+    "unknown"
   );
 }
 
@@ -21,6 +19,35 @@ function getCookie(req: NextRequest, name: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!process.env.INTERNAL_API_SECRET) {
+      console.error("Missing INTERNAL_API_SECRET.");
+
+      return NextResponse.json(
+        { ok: false, error: "Server configuration error." },
+        { status: 500 }
+      );
+    }
+
+    if (!isInternalRequest(req)) {
+      return NextResponse.json(
+        { ok: false, error: "Unauthorized." },
+        { status: 401 }
+      );
+    }
+
+    const ip = getClientIp(req);
+    const limited = rateLimit(`meta-schedule:ip:${ip}`, {
+      limit: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+
+    if (!limited.allowed) {
+      return NextResponse.json(
+        { ok: false, error: "Too many attempts." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
 
     const pixelId = clean(body.attribution_pixel_id, 40);
@@ -37,6 +64,13 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({ ok: true, skipped: true, reason: "no_paid_attribution" });
+    }
+
+    if (!isAllowedMetaPixelId(pixelId)) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid attribution data." },
+        { status: 400 }
+      );
     }
 
     if (!email) {
@@ -62,7 +96,7 @@ export async function POST(req: NextRequest) {
       eventId,
       fbp: getCookie(req, "_fbp"),
       fbc: getCookie(req, "_fbc"),
-      clientIpAddress: getClientIp(req),
+      clientIpAddress: ip === "unknown" ? null : ip,
       clientUserAgent: req.headers.get("user-agent"),
       customData: {
         content_name: "BNB Lab Booked Call",

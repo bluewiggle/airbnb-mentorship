@@ -4,6 +4,8 @@ import crypto from "crypto";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const STRIPE_SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
+
 function clean(value: unknown, maxLength = 160) {
   return String(value || "")
     .trim()
@@ -62,6 +64,15 @@ function verifyStripeSignature(
     .map((part) => part.replace("v1=", ""));
 
   if (!timestamp || !signatures.length) {
+    return false;
+  }
+
+  const timestampNumber = Number(timestamp);
+
+  if (
+    !Number.isFinite(timestampNumber) ||
+    Math.abs(Date.now() / 1000 - timestampNumber) > STRIPE_SIGNATURE_TOLERANCE_SECONDS
+  ) {
     return false;
   }
 

@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
+import crypto from "crypto";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
+import { clean, timingSafeCompare } from "@/lib/security";
 
-function clean(value: unknown, maxLength = 120) {
-  return String(value || "").trim().slice(0, maxLength);
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
 
 function getClientIp(req: NextRequest) {
   return (
@@ -19,9 +22,147 @@ function getCookie(req: NextRequest, name: string) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function formatMelbourneDateTime(value: string) {
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Melbourne",
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(value));
+}
+
+function verifyCalendlySignature(
+  rawBody: string,
+  signatureHeader: string,
+  signingKey: string
+) {
+  const parts = signatureHeader.split(",");
+
+  const timestamp = parts
+    .find((part) => part.trim().startsWith("t="))
+    ?.trim()
+    .replace("t=", "");
+
+  const signatures = parts
+    .filter((part) => part.trim().startsWith("v1="))
+    .map((part) => part.trim().replace("v1=", ""));
+
+  if (!timestamp || !signatures.length) {
+    return false;
+  }
+
+  const timestampNumber = Number(timestamp);
+
+  if (
+    !Number.isFinite(timestampNumber) ||
+    Math.abs(Date.now() / 1000 - timestampNumber) > WEBHOOK_TOLERANCE_SECONDS
+  ) {
+    return false;
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", signingKey)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+
+  return signatures.some((signature) =>
+    timingSafeCompare(signature, expectedSignature)
+  );
+}
+
+async function sendBookedCallToDiscord({
+  application,
+  booking,
+}: {
+  application: any;
+  booking: {
+    name: string;
+    email: string;
+    phone: string;
+    starts_at: string;
+  };
+}) {
+  const webhookUrl = process.env.DISCORD_CALLS_WEBHOOK_URL;
+
+  if (!webhookUrl) return;
+
+  const name = clean(application?.name || booking.name || "N/A", 80);
+  const email = clean(application?.email || booking.email || "N/A", 120);
+  const phone = clean(application?.phone || booking.phone || "N/A", 40);
+  const state = clean(application?.state || "N/A", 80);
+  const capital = clean(application?.capital || "N/A", 60);
+  const readyToStart = clean(application?.ready_to_start || "N/A", 60);
+  const referrer = clean(application?.referrer || "Unassigned", 80);
+  const bookingTime = booking.starts_at
+    ? formatMelbourneDateTime(booking.starts_at)
+    : "N/A";
+
+  const discordRes = await fetch(webhookUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      content: `🔥 NEW BOOKED CALL
+
+👤 Name: ${name}
+📧 Email: ${email}
+📱 Phone: ${phone}
+📍 State: ${state}
+💰 Capital: ${capital}
+⏳ Ready: ${readyToStart}
+🕘 Booking Time: ${bookingTime}
+
+🎯 Assigned To: ${referrer}`,
+      allowed_mentions: {
+        parse: [],
+      },
+    }),
+  });
+
+  if (!discordRes.ok) {
+    const text = await discordRes.text();
+    console.error("Booked call Discord webhook failed:", text);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY;
+
+    if (!signingKey) {
+      console.error("Missing CALENDLY_WEBHOOK_SIGNING_KEY.");
+
+      return Response.json(
+        { success: false, error: "Server configuration error." },
+        { status: 500 }
+      );
+    }
+
+    const signatureHeader = req.headers.get("calendly-webhook-signature");
+
+    if (!signatureHeader) {
+      return Response.json(
+        { success: false, error: "Missing Calendly signature." },
+        { status: 400 }
+      );
+    }
+
+    const rawBody = await req.text();
+
+    if (!verifyCalendlySignature(rawBody, signatureHeader, signingKey)) {
+      console.error("Invalid Calendly webhook signature.");
+
+      return Response.json(
+        { success: false, error: "Invalid signature." },
+        { status: 400 }
+      );
+    }
+
+    const body = JSON.parse(rawBody);
 
     const eventType = body.event;
     const payload = body.payload;
@@ -92,9 +233,6 @@ export async function POST(req: NextRequest) {
     if (!updateRes.ok) {
       const text = await updateRes.text();
 
-      // Supabase/Postgres duplicate key error.
-      // This usually means Calendly sent the same booking webhook again,
-      // or the booking was already saved by another route.
       if (text.includes('"code":"23505"') || text.includes("duplicate key")) {
         console.warn("Calendly booking already saved. Ignoring duplicate webhook:", text);
 
@@ -144,6 +282,8 @@ export async function POST(req: NextRequest) {
         hasApplication: Boolean(application),
       });
     }
+
+    await sendBookedCallToDiscord({ application, booking });
 
     return Response.json({ success: true });
   } catch (error) {

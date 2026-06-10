@@ -78,35 +78,8 @@ function CalendlyEmbed({
           calendly_invitee_uri: calendlyPayload.invitee?.uri || null,
         };
 
-        if (dataWithBookingTime.attribution_pixel_id && dataWithBookingTime.attribution_ref) {
-          fetch("/api/meta/schedule", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              ...dataWithBookingTime,
-              schedule_event_id: `schedule_${dataWithBookingTime.email}_${
-                calendlyPayload.event?.uri || Date.now()
-              }`,
-            }),
-          }).catch((error) => {
-            console.error("Failed to send Schedule CAPI event:", error);
-          });
-        } else {
-          console.log("Skipping Schedule CAPI because no paid attribution exists.");
-        }
-
-        fetch("/api/send-to-discord", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dataWithBookingTime),
-        }).catch((error) => {
-          console.error("Failed to send Discord notification:", error);
-        });
-
+        // Schedule CAPI and Discord booked-call notifications are handled by
+        // /api/calendly/webhook after Calendly verifies the booking server-side.
         localStorage.removeItem("lead_data");
       }
     }
@@ -256,16 +229,7 @@ useEffect(() => {
         return;
       }
 
-      await fetch("/api/send-to-discord", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(rejectedData),
-      }).catch((error) => {
-        console.error("Failed to send rejected application to Discord:", error);
-      });
-
+      // Rejection Discord notification is sent inside /api/apply server-side.
       setIsSubmitting(false);
       setStep("rejected");
       return;

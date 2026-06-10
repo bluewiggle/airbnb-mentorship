@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { sendMetaCapiEvent } from "@/lib/meta-capi";
-
-function clean(value: unknown, maxLength: number) {
-  return String(value || "").trim().slice(0, maxLength);
-}
+import { isAllowedMetaPixelId, sendMetaCapiEvent } from "@/lib/meta-capi";
+import { rateLimit } from "@/lib/rate-limit";
+import { clean } from "@/lib/security";
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -13,7 +11,7 @@ function getClientIp(req: Request) {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
-    null
+    "unknown"
   );
 }
 
@@ -23,8 +21,43 @@ function getCookie(req: Request, name: string) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+async function sendDiscordMessage(webhookUrl: string | undefined, content: string) {
+  if (!webhookUrl) return;
+
+  const discordRes = await fetch(webhookUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      content,
+      allowed_mentions: {
+        parse: [],
+      },
+    }),
+  });
+
+  if (!discordRes.ok) {
+    const text = await discordRes.text();
+    console.error("Discord webhook failed:", text);
+  }
+}
+
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const ipLimit = rateLimit(`apply:ip:${ip}`, {
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+    });
+
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { ok: false, error: "Too many attempts. Please try again soon." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
 
     const payload = {
@@ -47,6 +80,7 @@ export async function POST(req: Request) {
       landing_page: clean(body.landing_page, 500),
       meta_event_id: clean(body.meta_event_id, 160),
       status: clean(body.status, 80) || "application_submitted",
+      rejection_reason: clean(body.rejection_reason, 160),
     };
 
     if (!payload.name || !payload.email || !payload.phone) {
@@ -56,9 +90,36 @@ export async function POST(req: Request) {
       );
     }
 
+    const emailLimit = rateLimit(`apply:email:${payload.email}`, {
+      limit: 3,
+      windowMs: 10 * 60 * 1000,
+    });
+
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { ok: false, error: "Too many attempts. Please try again soon." },
+        { status: 429 }
+      );
+    }
+
     if (!isValidEmail(payload.email)) {
       return NextResponse.json(
         { ok: false, error: "Invalid email address." },
+        { status: 400 }
+      );
+    }
+
+    if (
+      payload.attribution_pixel_id &&
+      !isAllowedMetaPixelId(payload.attribution_pixel_id)
+    ) {
+      console.warn("Rejected application with invalid attribution_pixel_id.", {
+        ip,
+        attribution_pixel_id: payload.attribution_pixel_id,
+      });
+
+      return NextResponse.json(
+        { ok: false, error: "Invalid attribution data." },
         { status: 400 }
       );
     }
@@ -91,7 +152,7 @@ export async function POST(req: Request) {
       console.error("Supabase insert failed:", text);
 
       return NextResponse.json(
-        { ok: false, error: `Supabase insert failed: ${text}` },
+        { ok: false, error: "Could not save application. Please try again." },
         { status: 500 }
       );
     }
@@ -107,7 +168,7 @@ export async function POST(req: Request) {
         eventId: payload.meta_event_id || `lead_${payload.email}_${Date.now()}`,
         fbp: getCookie(req, "_fbp"),
         fbc: getCookie(req, "_fbc"),
-        clientIpAddress: getClientIp(req),
+        clientIpAddress: ip === "unknown" ? null : ip,
         clientUserAgent: req.headers.get("user-agent"),
         customData: {
           content_name: "BNB Lab Application",
@@ -126,38 +187,42 @@ export async function POST(req: Request) {
       console.log("Lead CAPI skipped because no paid attribution exists.");
     }
 
-    const unbookedLeadsWebhookUrl = process.env.DISCORD_UNBOOKED_LEADS_WEBHOOK_URL;
+    const isRejected =
+      payload.status.startsWith("rejected") || Boolean(payload.rejection_reason);
 
-    if (payload.status === "application_submitted" && unbookedLeadsWebhookUrl) {
-      try {
-        const discordRes = await fetch(unbookedLeadsWebhookUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: `📝 NEW WEBSITE APPLICATION
+    if (isRejected) {
+      await sendDiscordMessage(
+        process.env.DISCORD_DENIED_WEBHOOK_URL,
+        `🚫 APPLICATION DENIED
 
-    👤 Name: ${payload.name || "N/A"}
-    📧 Email: ${payload.email || "N/A"}
-    📱 Phone: ${payload.phone || "N/A"}
-    📍 State: ${payload.state || "N/A"}
-    💰 Capital: ${payload.capital || "N/A"}
-    ⏳ Ready: ${payload.ready_to_start || "N/A"}
+👤 Name: ${payload.name || "N/A"}
+📧 Email: ${payload.email || "N/A"}
+📱 Phone: ${payload.phone || "N/A"}
+📍 State: ${payload.state || "N/A"}
+💰 Capital: ${payload.capital || "N/A"}
+⏳ Ready: ${payload.ready_to_start || "N/A"}
 
-    🎯 Assigned To: ${payload.referrer || "Unassigned"}
+❌ Reason: ${payload.rejection_reason || payload.status || "N/A"}
+🎯 Assigned To: ${payload.referrer || "Unassigned"}`
+      );
+    }
 
-    ⚠️ They filled the form but have not booked a call yet.`,
-          }),
-        });
+    if (payload.status === "application_submitted") {
+      await sendDiscordMessage(
+        process.env.DISCORD_UNBOOKED_LEADS_WEBHOOK_URL,
+        `📝 NEW WEBSITE APPLICATION
 
-        if (!discordRes.ok) {
-          const text = await discordRes.text();
-          console.error("Unbooked lead Discord webhook failed:", text);
-        }
-      } catch (error) {
-        console.error("Failed to send unbooked lead to Discord:", error);
-      }
+👤 Name: ${payload.name || "N/A"}
+📧 Email: ${payload.email || "N/A"}
+📱 Phone: ${payload.phone || "N/A"}
+📍 State: ${payload.state || "N/A"}
+💰 Capital: ${payload.capital || "N/A"}
+⏳ Ready: ${payload.ready_to_start || "N/A"}
+
+🎯 Assigned To: ${payload.referrer || "Unassigned"}
+
+⚠️ They filled the form but have not booked a call yet.`
+      );
     }
 
     return NextResponse.json({ ok: true });

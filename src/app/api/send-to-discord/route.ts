@@ -1,3 +1,5 @@
+import { clean, isInternalRequest } from "@/lib/security";
+
 type CalendlyEventResponse = {
   resource?: {
     name?: string;
@@ -5,14 +7,6 @@ type CalendlyEventResponse = {
     end_time?: string;
   };
 };
-
-function clean(value: unknown, maxLength = 100) {
-  return String(value || "")
-    .trim()
-    .replaceAll("@everyone", "[everyone]")
-    .replaceAll("@here", "[here]")
-    .slice(0, maxLength);
-}
 
 function formatMelbourneDateTime(value: string) {
   return new Intl.DateTimeFormat("en-AU", {
@@ -26,10 +20,26 @@ function formatMelbourneDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function isCalendlyApiUri(value: unknown) {
+  if (typeof value !== "string") return false;
+
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "api.calendly.com" &&
+      url.pathname.startsWith("/scheduled_events/")
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function getCalendlyBookingTime(eventUri: string | null | undefined) {
   const calendlyToken = process.env.CALENDLY_TOKEN;
 
-  if (!calendlyToken || !eventUri) {
+  if (!calendlyToken || !eventUri || !isCalendlyApiUri(eventUri)) {
     return null;
   }
 
@@ -37,7 +47,6 @@ async function getCalendlyBookingTime(eventUri: string | null | undefined) {
     method: "GET",
     headers: {
       Authorization: `Bearer ${calendlyToken}`,
-      "Content-Type": "application/json",
     },
   });
 
@@ -54,6 +63,22 @@ async function getCalendlyBookingTime(eventUri: string | null | undefined) {
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.INTERNAL_API_SECRET) {
+      console.error("Missing INTERNAL_API_SECRET.");
+
+      return Response.json(
+        { success: false, error: "Server configuration error." },
+        { status: 500 }
+      );
+    }
+
+    if (!isInternalRequest(req)) {
+      return Response.json(
+        { success: false, error: "Unauthorized." },
+        { status: 401 }
+      );
+    }
+
     const callsWebhookUrl = process.env.DISCORD_CALLS_WEBHOOK_URL;
     const deniedWebhookUrl = process.env.DISCORD_DENIED_WEBHOOK_URL;
 
@@ -95,26 +120,26 @@ export async function POST(req: Request) {
     const message = isRejected
       ? `🚫 APPLICATION DENIED
 
-    👤 Name: ${payload.name || "N/A"}
-    📧 Email: ${payload.email || "N/A"}
-    📱 Phone: ${payload.phone || "N/A"}
-    📍 State: ${payload.state || "N/A"}
-    💰 Capital: ${payload.capital || "N/A"}
-    ⏳ Ready: ${payload.ready_to_start || "N/A"}
+👤 Name: ${payload.name || "N/A"}
+📧 Email: ${payload.email || "N/A"}
+📱 Phone: ${payload.phone || "N/A"}
+📍 State: ${payload.state || "N/A"}
+💰 Capital: ${payload.capital || "N/A"}
+⏳ Ready: ${payload.ready_to_start || "N/A"}
 
-    ❌ Reason: ${payload.rejection_reason || payload.status || "N/A"}
-    🎯 Assigned To: ${payload.referrer || "Unassigned"}`
+❌ Reason: ${payload.rejection_reason || payload.status || "N/A"}
+🎯 Assigned To: ${payload.referrer || "Unassigned"}`
       : `🔥 NEW BOOKED CALL
 
-    👤 Name: ${payload.name || "N/A"}
-    📧 Email: ${payload.email || "N/A"}
-    📱 Phone: ${payload.phone || "N/A"}
-    📍 State: ${payload.state || "N/A"}
-    💰 Capital: ${payload.capital || "N/A"}
-    ⏳ Ready: ${payload.ready_to_start || "N/A"}
-    🕘 Booking Time: ${payload.booking_time || "N/A"}
+👤 Name: ${payload.name || "N/A"}
+📧 Email: ${payload.email || "N/A"}
+📱 Phone: ${payload.phone || "N/A"}
+📍 State: ${payload.state || "N/A"}
+💰 Capital: ${payload.capital || "N/A"}
+⏳ Ready: ${payload.ready_to_start || "N/A"}
+🕘 Booking Time: ${payload.booking_time || "N/A"}
 
-    🎯 Assigned To: ${payload.referrer || "Unassigned"}`;
+🎯 Assigned To: ${payload.referrer || "Unassigned"}`;
 
     const targetWebhookUrl = isRejected ? deniedWebhookUrl : callsWebhookUrl;
 
