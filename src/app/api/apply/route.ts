@@ -80,7 +80,6 @@ export async function POST(req: Request) {
       landing_page: clean(body.landing_page, 500),
       meta_event_id: clean(body.meta_event_id, 160),
       status: clean(body.status, 80) || "application_submitted",
-      rejection_reason: clean(body.rejection_reason, 160),
     };
 
     if (!payload.name || !payload.email || !payload.phone) {
@@ -187,8 +186,7 @@ export async function POST(req: Request) {
       console.log("Lead CAPI skipped because no paid attribution exists.");
     }
 
-    const isRejected =
-      payload.status.startsWith("rejected") || Boolean(payload.rejection_reason);
+    const isRejected = payload.status.startsWith("rejected");
 
     if (isRejected) {
       await sendDiscordMessage(
@@ -202,7 +200,7 @@ export async function POST(req: Request) {
 💰 Capital: ${payload.capital || "N/A"}
 ⏳ Ready: ${payload.ready_to_start || "N/A"}
 
-❌ Reason: ${payload.rejection_reason || payload.status || "N/A"}
+❌ Reason: ${payload.status || "N/A"}
 🎯 Assigned To: ${payload.referrer || "Unassigned"}`
       );
     }

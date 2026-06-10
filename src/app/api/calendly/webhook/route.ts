@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
+import { scheduleGuideEmails } from "@/lib/guide-emails";
 import { clean, timingSafeCompare } from "@/lib/security";
 
 export const runtime = "nodejs";
@@ -345,6 +346,47 @@ export async function POST(req: NextRequest) {
     }
 
     await sendBookedCallToDiscord({ application, booking });
+
+    if (application?.guide_email_id) {
+      console.log("Guide email already scheduled. Skipping duplicate.", {
+        email: booking.email,
+        guideEmailId: application.guide_email_id,
+      });
+    } else {
+      const guideEmailResult = await scheduleGuideEmails({
+        name: application?.name || booking.name,
+        email: application?.email || booking.email,
+        startsAt: booking.starts_at,
+      });
+
+      if (guideEmailResult && application?.id) {
+        const guideUpdateRes = await fetch(
+          `${supabaseUrl}/rest/v1/applications?id=eq.${encodeURIComponent(
+            String(application.id)
+          )}`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: serviceRoleKey,
+              Authorization: `Bearer ${serviceRoleKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              guide_email_id: guideEmailResult.guideEmailId,
+              guide_email_scheduled_at: guideEmailResult.guideEmailScheduledAt,
+              guide_reminder_email_id: guideEmailResult.guideReminderEmailId,
+              guide_reminder_scheduled_at:
+                guideEmailResult.guideReminderScheduledAt,
+            }),
+          }
+        );
+
+        if (!guideUpdateRes.ok) {
+          const text = await guideUpdateRes.text();
+          console.error("Failed to save guide email scheduling details:", text);
+        }
+      }
+    }
 
     return Response.json({ success: true });
   } catch (error) {
