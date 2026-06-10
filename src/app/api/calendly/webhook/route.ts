@@ -209,50 +209,111 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const updateRes = await fetch(
+    const lookupRes = await fetch(
       `${supabaseUrl}/rest/v1/applications?email=eq.${encodeURIComponent(
         booking.email
-      )}&order=created_at.desc&limit=1`,
+      )}&select=*&order=created_at.desc&limit=1`,
       {
-        method: "PATCH",
+        method: "GET",
         headers: {
           apikey: serviceRoleKey,
           Authorization: `Bearer ${serviceRoleKey}`,
           "Content-Type": "application/json",
-          Prefer: "return=representation",
         },
-        body: JSON.stringify({
-          starts_at: booking.starts_at,
-          calendly_event_uri: booking.calendly_event_uri,
-          calendly_invitee_uri: booking.calendly_invitee_uri,
-          status: "call_booked",
-        }),
       }
     );
 
-    if (!updateRes.ok) {
-      const text = await updateRes.text();
-
-      if (text.includes('"code":"23505"') || text.includes("duplicate key")) {
-        console.warn("Calendly booking already saved. Ignoring duplicate webhook:", text);
-
-        return Response.json({
-          success: true,
-          duplicate: true,
-          message: "Calendly booking already saved.",
-        });
-      }
-
-      console.error("Failed to update Supabase with Calendly booking:", text);
+    if (!lookupRes.ok) {
+      const text = await lookupRes.text();
+      console.error("Failed to find matching application for Calendly booking:", text);
 
       return Response.json(
-        { success: false, error: "Failed to save Calendly booking." },
+        { success: false, error: "Failed to find matching application." },
         { status: 500 }
       );
     }
 
-    const updatedRows = await updateRes.json();
-    const application = Array.isArray(updatedRows) ? updatedRows[0] : null;
+    const matchingRows = await lookupRes.json();
+    let application = Array.isArray(matchingRows) ? matchingRows[0] : null;
+
+    if (!application) {
+      console.warn("No matching application row found for Calendly booking. Discord will use booking details only.", {
+        email: booking.email,
+        calendly_invitee_uri: booking.calendly_invitee_uri,
+      });
+    } else if (!application.id) {
+      console.error("Matching application row has no id. Cannot safely update a single row.", {
+        email: booking.email,
+        application,
+      });
+    } else {
+      const updateRes = await fetch(
+        `${supabaseUrl}/rest/v1/applications?id=eq.${encodeURIComponent(
+          String(application.id)
+        )}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation",
+          },
+          body: JSON.stringify({
+            starts_at: booking.starts_at,
+            calendly_event_uri: booking.calendly_event_uri,
+            calendly_invitee_uri: booking.calendly_invitee_uri,
+            status: "call_booked",
+          }),
+        }
+      );
+
+      if (!updateRes.ok) {
+        const text = await updateRes.text();
+
+        if (text.includes('"code":"23505"') || text.includes("duplicate key")) {
+          console.warn("Calendly booking already exists on another application row. Fetching existing row and continuing to Discord:", text);
+
+          if (booking.calendly_invitee_uri) {
+            const existingBookingRes = await fetch(
+              `${supabaseUrl}/rest/v1/applications?calendly_invitee_uri=eq.${encodeURIComponent(
+                booking.calendly_invitee_uri
+              )}&select=*&limit=1`,
+              {
+                method: "GET",
+                headers: {
+                  apikey: serviceRoleKey,
+                  Authorization: `Bearer ${serviceRoleKey}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            if (existingBookingRes.ok) {
+              const existingRows = await existingBookingRes.json();
+              const existingApplication = Array.isArray(existingRows) ? existingRows[0] : null;
+
+              if (existingApplication) {
+                application = existingApplication;
+              }
+            } else {
+              const existingText = await existingBookingRes.text();
+              console.error("Failed to fetch existing Calendly booking row after duplicate key:", existingText);
+            }
+          }
+        } else {
+          console.error("Failed to update Supabase with Calendly booking:", text);
+
+          return Response.json(
+            { success: false, error: "Failed to save Calendly booking." },
+            { status: 500 }
+          );
+        }
+      } else {
+        const updatedRows = await updateRes.json();
+        application = Array.isArray(updatedRows) ? updatedRows[0] : application;
+      }
+    }
 
     if (application?.attribution_pixel_id && application?.attribution_ref) {
       await sendMetaCapiEvent({
