@@ -5,7 +5,7 @@ const REMINDER_BEFORE_CALL_MINUTES = 120;
 
 const guidePdfUrl = process.env.GUIDE_PDF_URL;
 const guideEmailFrom =
-  process.env.GUIDE_EMAIL_FROM || "Noah from BNB Lab <no-reply@bnblab.com.au>";
+  process.env.GUIDE_EMAIL_FROM || "Liam from BNB Lab <no-reply@bnblab.com.au>";
 const guideEmailReplyTo =
   process.env.GUIDE_EMAIL_REPLY_TO || "bnblab.official@gmail.com";
 
@@ -88,7 +88,7 @@ function emailShell(params: {
                 </table>
                 <p style="margin:0 0 22px; font-size:15px; line-height:1.65; color:#333333;">If the button does not open, copy and paste this link into your browser:<br /><a href="${url}" target="_blank" style="color:#e62929; word-break:break-word;">${url}</a></p>
                 <p style="margin:0 0 4px; font-size:15px; line-height:1.65; color:#333333;">Talk soon,</p>
-                <p style="margin:0 0 28px; font-size:15px; line-height:1.65; color:#111111; font-weight:700;">Noah<br />BNB Lab</p>
+                <p style="margin:0 0 28px; font-size:15px; line-height:1.65; color:#111111; font-weight:700;">Liam<br />BNB Lab</p>
               </td>
             </tr>
           </table>
@@ -133,7 +133,7 @@ It covers what Airbnb arbitrage is, why the model can work when the numbers make
 The goal is simple. Read it before the call so we can skip the surface level stuff and talk about your situation, your numbers, and whether this model is actually a fit for you.
 
 Talk soon,
-Noah
+Liam
 BNB Lab`;
 
   return {
@@ -172,7 +172,7 @@ ${guidePdfUrl}
 It will help you understand the model, the process, and the main mistakes to avoid. That way, we can spend the call on your situation, your capital, your timeline, and whether this is genuinely the right move for you.
 
 Talk soon,
-Noah
+Liam
 BNB Lab`;
 
   return {
