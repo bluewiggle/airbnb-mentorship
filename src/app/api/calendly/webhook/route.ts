@@ -237,6 +237,20 @@ export async function POST(req: NextRequest) {
     const matchingRows = await lookupRes.json();
     let application = Array.isArray(matchingRows) ? matchingRows[0] : null;
 
+    const alreadyHadGuideEmailOrBooking = Array.isArray(matchingRows)
+      ? matchingRows.some((row) =>
+          Boolean(
+            row?.guide_email_id ||
+              row?.guide_email_scheduled_at ||
+              row?.guide_reminder_email_id ||
+              row?.guide_reminder_scheduled_at ||
+              row?.calendly_invitee_uri ||
+              row?.calendly_event_uri ||
+              row?.status === "call_booked"
+          )
+        )
+      : false;
+
     if (!application) {
       console.warn("No matching application row found for Calendly booking. Discord will use booking details only.", {
         email: booking.email,
@@ -347,10 +361,18 @@ export async function POST(req: NextRequest) {
 
     await sendBookedCallToDiscord({ application, booking });
 
-    if (application?.guide_email_id) {
-      console.log("Guide email already scheduled. Skipping duplicate.", {
+    if (!application?.id) {
+      console.log("Skipping guide emails because no matching website application row was found.", {
         email: booking.email,
-        guideEmailId: application.guide_email_id,
+      });
+    } else if (alreadyHadGuideEmailOrBooking) {
+      console.log("Skipping guide emails because this application/email already had a booked call. This is probably a duplicate Calendly webhook or a reschedule.", {
+        email: booking.email,
+        applicationId: application.id,
+        guideEmailId: application.guide_email_id || null,
+        calendlyInviteeUri: application.calendly_invitee_uri || null,
+        calendlyEventUri: application.calendly_event_uri || null,
+        status: application.status || null,
       });
     } else {
       const guideEmailResult = await scheduleGuideEmails({
@@ -359,7 +381,7 @@ export async function POST(req: NextRequest) {
         startsAt: booking.starts_at,
       });
 
-      if (guideEmailResult && application?.id) {
+      if (guideEmailResult) {
         const guideUpdateRes = await fetch(
           `${supabaseUrl}/rest/v1/applications?id=eq.${encodeURIComponent(
             String(application.id)
