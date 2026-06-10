@@ -359,7 +359,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await sendBookedCallToDiscord({ application, booking });
+    if (alreadyHadGuideEmailOrBooking) {
+      console.log("Skipping booked-call Discord message because this application/email already had a booked call. This is probably a duplicate Calendly webhook or a reschedule.", {
+        email: booking.email,
+        applicationId: application?.id || null,
+        calendlyInviteeUri: application?.calendly_invitee_uri || null,
+        calendlyEventUri: application?.calendly_event_uri || null,
+        status: application?.status || null,
+      });
+    } else {
+      await sendBookedCallToDiscord({ application, booking });
+    }
 
     if (!application?.id) {
       console.log("Skipping guide emails because no matching website application row was found.", {
