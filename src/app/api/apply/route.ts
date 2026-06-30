@@ -21,28 +21,6 @@ function getCookie(req: Request, name: string) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-async function sendDiscordMessage(webhookUrl: string | undefined, content: string) {
-  if (!webhookUrl) return;
-
-  const discordRes = await fetch(webhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      content,
-      allowed_mentions: {
-        parse: [],
-      },
-    }),
-  });
-
-  if (!discordRes.ok) {
-    const text = await discordRes.text();
-    console.error("Discord webhook failed:", text);
-  }
-}
-
 export async function POST(req: Request) {
   try {
     const ip = getClientIp(req);
@@ -184,43 +162,6 @@ export async function POST(req: Request) {
       });
     } else {
       console.log("Lead CAPI skipped because no paid attribution exists.");
-    }
-
-    const isRejected = payload.status.startsWith("rejected");
-
-    if (isRejected) {
-      await sendDiscordMessage(
-        process.env.DISCORD_DENIED_WEBHOOK_URL,
-        `🚫 APPLICATION DENIED
-
-👤 Name: ${payload.name || "N/A"}
-📧 Email: ${payload.email || "N/A"}
-📱 Phone: ${payload.phone || "N/A"}
-📍 State: ${payload.state || "N/A"}
-💰 Capital: ${payload.capital || "N/A"}
-⏳ Ready: ${payload.ready_to_start || "N/A"}
-
-❌ Reason: ${payload.status || "N/A"}
-🎯 Assigned To: ${payload.referrer || "Unassigned"}`
-      );
-    }
-
-    if (payload.status === "application_submitted") {
-      await sendDiscordMessage(
-        process.env.DISCORD_UNBOOKED_LEADS_WEBHOOK_URL,
-        `📝 NEW WEBSITE APPLICATION
-
-👤 Name: ${payload.name || "N/A"}
-📧 Email: ${payload.email || "N/A"}
-📱 Phone: ${payload.phone || "N/A"}
-📍 State: ${payload.state || "N/A"}
-💰 Capital: ${payload.capital || "N/A"}
-⏳ Ready: ${payload.ready_to_start || "N/A"}
-
-🎯 Assigned To: ${payload.referrer || "Unassigned"}
-
-⚠️ They filled the form but have not booked a call yet.`
-      );
     }
 
     return NextResponse.json({ ok: true });

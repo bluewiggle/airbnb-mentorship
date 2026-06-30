@@ -1,9 +1,8 @@
 import crypto from "crypto";
 
-const NOAH_PIXEL_ID = "1788895448752082";
 const LIAM_PIXEL_ID = "2097284224148333";
 
-const ALLOWED_PIXEL_IDS = new Set([NOAH_PIXEL_ID, LIAM_PIXEL_ID]);
+const ALLOWED_PIXEL_IDS = new Set([LIAM_PIXEL_ID]);
 
 export function isAllowedMetaPixelId(pixelId?: string | null) {
   return Boolean(pixelId && ALLOWED_PIXEL_IDS.has(pixelId));
@@ -42,10 +41,6 @@ function cleanPhone(value?: string | null) {
 function getAccessToken(pixelId: string) {
   if (!isAllowedMetaPixelId(pixelId)) {
     return undefined;
-  }
-
-  if (pixelId === NOAH_PIXEL_ID) {
-    return process.env.NOAH_META_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN;
   }
 
   if (pixelId === LIAM_PIXEL_ID) {

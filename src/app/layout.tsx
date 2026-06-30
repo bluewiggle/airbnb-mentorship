@@ -79,12 +79,10 @@ export default function RootLayout({
           {`
             (function () {
               var PIXELS = {
-                n: "1788895448752082",
                 l: "2097284224148333"
               };
 
               var REF_TO_NAME = {
-                n: "Noah",
                 l: "Liam"
               };
 
@@ -139,7 +137,7 @@ export default function RootLayout({
                 var params = new URLSearchParams(window.location.search);
                 var ref = params.get("ref");
 
-                var hasNewRef = ref === "n" || ref === "l";
+                var hasNewRef = ref === "l";
                 var stored = getStoredAttribution();
 
                 if (hasNewRef) {

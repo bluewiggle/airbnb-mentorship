@@ -78,8 +78,8 @@ function CalendlyEmbed({
           calendly_invitee_uri: calendlyPayload.invitee?.uri || null,
         };
 
-        // Schedule CAPI and Discord booked-call notifications are handled by
-        // /api/calendly/webhook after Calendly verifies the booking server-side.
+        // Note: server-side Schedule CAPI / Discord booked-call notifications
+        // previously lived in /api/calendly/webhook, which has been removed.
         localStorage.removeItem("lead_data");
       }
     }
@@ -229,7 +229,7 @@ useEffect(() => {
         return;
       }
 
-      // Rejection Discord notification is sent inside /api/apply server-side.
+      // Application status saved to Supabase; Discord notifications removed.
       setIsSubmitting(false);
       setStep("rejected");
       return;

@@ -6,7 +6,7 @@ declare global {
     fbq?: (...args: any[]) => void;
     __BNB_ATTRIBUTION__?: {
       ref: "n" | "l";
-      referrer: "Noah" | "Liam";
+      referrer: "Liam";
       pixel_id: string;
       fbclid?: string;
       utm_source?: string;
