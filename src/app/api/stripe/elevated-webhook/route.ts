@@ -206,6 +206,31 @@ Reason: ${clean(declineReason, 250)}`
       );
     }
 
+    if (isFailed) {
+      const cancelMessage =
+        `⚠️ <@423034487258087424> — Payment was declined but the booking may have gone through. Please cancel the booking for **${customerName}** (${customerEmail}) — ${formatAmount(amount, currency)}.`;
+
+      const cancelRes = await fetch(discordWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: cancelMessage,
+          allowed_mentions: {
+            users: ["423034487258087424"],
+          },
+        }),
+      });
+
+      if (!cancelRes.ok) {
+        console.error(
+          "Failed to send Elevated cancel reminder:",
+          await cancelRes.text()
+        );
+      }
+    }
+
     return Response.json({
       success: true,
       message: isFailed
