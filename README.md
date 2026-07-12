@@ -1,19 +1,24 @@
-# Airbnb Mentorship Website (Vercel-ready)
+# Elevated Stripe Webhook Only
 
-## Local dev
-1. Install Node.js 18+.
-2. In this folder:
-   - `npm install`
-   - `npm run dev`
-3. Open http://localhost:3000
+This project intentionally contains no public website or marketing frontend.
+Normal browser URLs return Next.js's standard 404 response.
 
-## Deploy to Vercel
-1. Push this folder to a GitHub repo.
-2. In Vercel: **New Project** → import repo.
-3. Framework: Next.js (auto-detected).
-4. Deploy.
+## Preserved endpoint
 
-## Where to edit content
-- `src/app/page.tsx` controls section order.
-- `src/components/sections/*` contains each section as its own component.
-- Theme tokens: `src/app/globals.css` (look for `--accent` and background gradients).
+`POST /api/stripe/elevated-webhook`
+
+It verifies Stripe webhook signatures and sends Discord notifications for:
+
+- `charge.succeeded`
+- `charge.failed`
+
+## Required Vercel environment variables
+
+- `STRIPE_ELEVATED_WEBHOOK_SECRET`
+- `DISCORD_STRIPE_ELEVATED_WEBHOOK`
+
+Keep the existing Stripe webhook destination pointed at:
+
+`https://YOUR-DOMAIN/api/stripe/elevated-webhook`
+
+Do not delete or rename the endpoint until the Stripe webhook is moved to another deployed service.
