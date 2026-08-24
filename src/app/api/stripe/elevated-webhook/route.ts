@@ -35,6 +35,16 @@ function formatMelbourneDateTimeFromUnix(unixSeconds: number) {
   }).format(new Date(unixSeconds * 1000));
 }
 
+function formatAuthorizationLength(startUnixSeconds: number, endUnixSeconds: number) {
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  const durationInDays = Math.max(
+    1,
+    Math.ceil((endUnixSeconds - startUnixSeconds) * 1000 / millisecondsPerDay)
+  );
+
+  return `${durationInDays} day${durationInDays === 1 ? "" : "s"}`;
+}
+
 function timingSafeCompare(a: string, b: string) {
   const encoder = new TextEncoder();
 
@@ -155,6 +165,11 @@ export async function POST(req: NextRequest) {
     const customerPhone = clean(charge.billing_details?.phone || "N/A");
 
     const isFailed = event.type === "charge.failed";
+    const captureBefore = charge.payment_method_details?.card?.capture_before;
+    const isPreAuthorization =
+      !isFailed &&
+      charge.captured === false &&
+      typeof captureBefore === "number";
 
     const declineReason =
       charge.failure_message ||
@@ -172,6 +187,16 @@ export async function POST(req: NextRequest) {
 🕘 Time: ${formatMelbourneDateTimeFromUnix(charge.created)}
 
 Reason: ${clean(declineReason, 250)}`
+      : isPreAuthorization
+      ? `🔒 ELEVATED STRIPE PRE-AUTHORIZATION RECEIVED
+
+💰 Amount: ${formatAmount(amount, currency)}
+👤 Name: ${customerName}
+📧 Email: ${customerEmail}
+📱 Phone: ${customerPhone}
+🕘 Authorized: ${formatMelbourneDateTimeFromUnix(charge.created)}
+⏳ Hold length: ${formatAuthorizationLength(charge.created, captureBefore)}
+📅 Expires: ${formatMelbourneDateTimeFromUnix(captureBefore)}`
       : `💸 ELEVATED STRIPE PAYMENT RECEIVED
 
 💰 Amount: ${formatAmount(amount, currency)}
